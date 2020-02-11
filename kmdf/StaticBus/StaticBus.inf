@@ -1,0 +1,87 @@
+;
+; StaticBus.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+
+; Indicate "System Devices"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+
+Provider=%ManufacturerName%
+CatalogFile=StaticBus.cat
+DriverVer= ; TODO: set DriverVer in stampinf property pages
+
+[DestinationDirs]
+DefaultDestDir = 12
+Riley_StaticBus_Device_CoInstaller_CopyFiles = 11
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+StaticBus.sys  = 1,,
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+%StaticBus.DeviceDesc%=Riley_StaticBus_Device, Root\StaticBus ; TODO: edit hw-id
+
+[Riley_StaticBus_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Riley_StaticBus_Device.NT.HW]
+AddReg=Riley_StaticBus_Device.NT.AddReg
+
+[Riley_StaticBus_Device.NT.AddReg]                            
+HKR,,DeviceCharacteristics,0x10001,0x0100         ; Use same security checks on relative opens
+HKR,,Security,,"D:P(A;;GA;;;BA)(A;;GA;;;SY)"      ; Allow generic-all access to Built-in administrators and Local system
+
+[Drivers_Dir]
+StaticBus.sys
+
+ 
+;-------------- Service installation
+[Riley_StaticBus_Device.NT.Services]
+AddService = StaticBus,%SPSVCINST_ASSOCSERVICE%, Riley_StaticBus_Service_Inst
+
+; -------------- StaticBus driver install sections
+[Riley_StaticBus_Service_Inst]
+DisplayName    = %StaticBus.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\StaticBus.sys
+
+
+;--- Riley_StaticBus_Device Coinstaller installation ------
+; Just some fixed content. Don't care it.
+
+[Riley_StaticBus_Device.NT.CoInstallers]
+AddReg=Riley_StaticBus_Device_CoInstaller_AddReg
+CopyFiles=Riley_StaticBus_Device_CoInstaller_CopyFiles
+
+[Riley_StaticBus_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[Riley_StaticBus_Device_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[Riley_StaticBus_Device.NT.Wdf]
+KmdfService =  StaticBus, Riley_StaticBus_wdfsect
+[Riley_StaticBus_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName= "Riley Lab"
+DiskName = "StaticBus Installation Disk"
+StaticBus.DeviceDesc = "Static Bus Enumrator"
+StaticBus.SVCDESC = "Static Bus Service"
