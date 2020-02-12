@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Driver Files">
+      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
+      <Extensions>inf;inv;inx;mof;mc;</Extensions>
+    </Filter>
+    <Filter Include="Source Files\IndirectDisp">
+      <UniqueIdentifier>{9d39e541-c000-4327-9d24-109d587fdcf2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Driver">
+      <UniqueIdentifier>{82df6a0a-cbc8-43aa-b8c5-000a551c6719}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\IndirectDisp">
+      <UniqueIdentifier>{384964cc-faba-4a59-9ded-dab71c1fe5b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Driver">
+      <UniqueIdentifier>{40eafc1d-c478-463d-9eec-cf44e467c3c8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="IndirectDisplay.inf">
+      <Filter>Driver Files</Filter>
+    </Inf>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="IndirectDisp.h">
+      <Filter>Header Files\IndirectDisp</Filter>
+    </ClInclude>
+    <ClInclude Include="Device.h">
+      <Filter>Header Files\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Driver.h">
+      <Filter>Header Files\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Public.h">
+      <Filter>Header Files\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Queue.h">
+      <Filter>Header Files\Driver</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Device.c">
+      <Filter>Source Files\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="Driver.cpp">
+      <Filter>Source Files\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="IndirectDisp.cpp">
+      <Filter>Source Files\IndirectDisp</Filter>
+    </ClCompile>
+    <ClCompile Include="Queue.c">
+      <Filter>Source Files\Driver</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
