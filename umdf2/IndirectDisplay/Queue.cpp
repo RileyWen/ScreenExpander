@@ -14,6 +14,7 @@ Environment:
 
 --*/
 
+#include "pch.h"
 #include "driver.h"
 
 NTSTATUS

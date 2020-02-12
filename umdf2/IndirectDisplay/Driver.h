@@ -14,9 +14,7 @@ Environment:
 
 --*/
 
-#include <windows.h>
-#include <wdf.h>
-#include <initguid.h>
+#include "pch.h"
 
 #include "device.h"
 #include "queue.h"
@@ -26,7 +24,6 @@ EXTERN_C_START
 //
 // WDFDRIVER Events
 //
-
 DRIVER_INITIALIZE DriverEntry;
 EVT_WDF_DRIVER_DEVICE_ADD IndirectDisplayEvtDeviceAdd;
 EVT_WDF_OBJECT_CONTEXT_CLEANUP IndirectDisplayEvtDriverContextCleanup;

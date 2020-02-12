@@ -29,6 +29,12 @@
     <Filter Include="Header Files\Driver">
       <UniqueIdentifier>{40eafc1d-c478-463d-9eec-cf44e467c3c8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Precompiled">
+      <UniqueIdentifier>{8b57db8e-0735-431a-af67-4b81cd505b18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Precompiled">
+      <UniqueIdentifier>{89d1445a-1f82-4016-8a22-fdf2935f19fe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -48,25 +54,31 @@
     <ClInclude Include="Driver.h">
       <Filter>Header Files\Driver</Filter>
     </ClInclude>
-    <ClInclude Include="Public.h">
-      <Filter>Header Files\Driver</Filter>
-    </ClInclude>
     <ClInclude Include="Queue.h">
       <Filter>Header Files\Driver</Filter>
     </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files\Precompiled</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Device.c">
-      <Filter>Source Files\Driver</Filter>
-    </ClCompile>
     <ClCompile Include="Driver.cpp">
       <Filter>Source Files\Driver</Filter>
     </ClCompile>
     <ClCompile Include="IndirectDisp.cpp">
       <Filter>Source Files\IndirectDisp</Filter>
     </ClCompile>
-    <ClCompile Include="Queue.c">
+    <ClCompile Include="IddCxCallbacks.cpp">
+      <Filter>Source Files\IndirectDisp</Filter>
+    </ClCompile>
+    <ClCompile Include="Device.cpp">
       <Filter>Source Files\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="Queue.cpp">
+      <Filter>Source Files\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files\Precompiled</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

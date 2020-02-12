@@ -1,52 +1,29 @@
 #pragma once
 
-#include <unknwn.h>
-#include <winrt/base.h>
-#include <Windows.h>
-#include <wdf.h>
+#include "pch.h"
 
-#ifndef IDDCX_VERSION_MAJOR
-#define IDDCX_VERSION_MAJOR 1
-#endif
+EVT_WDF_DRIVER_DEVICE_ADD Evt_IddDeviceAdd;
+EVT_WDF_DEVICE_D0_ENTRY Evt_IddDeviceD0Entry;
 
-#ifndef IDDCX_VERSION_MINOR
-#define IDDCX_VERSION_MINOR 2
-#endif
+EVT_IDD_CX_ADAPTER_INIT_FINISHED Evt_IddAdapterInitFinished;
+EVT_IDD_CX_ADAPTER_COMMIT_MODES Evt_IddAdapterCommitModes;
 
+EVT_IDD_CX_PARSE_MONITOR_DESCRIPTION Evt_IddParseMonitorDescription;
+EVT_IDD_CX_MONITOR_GET_DEFAULT_DESCRIPTION_MODES Evt_IddMonitorGetDefaultModes;
+EVT_IDD_CX_MONITOR_QUERY_TARGET_MODES Evt_IddMonitorQueryModes;
 
-#include <iddcx/1.2/IddCx.h>
-
-
-#include <dxgi1_6.h>
-#include <d3d11_4.h>
-#include <avrt.h>
-
-#include <memory>
-#include <vector>
-
-EVT_WDF_DRIVER_DEVICE_ADD IddDeviceAdd;
-EVT_WDF_DEVICE_D0_ENTRY IddDeviceD0Entry;
-
-EVT_IDD_CX_ADAPTER_INIT_FINISHED IddAdapterInitFinished;
-EVT_IDD_CX_ADAPTER_COMMIT_MODES IddAdapterCommitModes;
-
-EVT_IDD_CX_PARSE_MONITOR_DESCRIPTION IddParseMonitorDescription;
-EVT_IDD_CX_MONITOR_GET_DEFAULT_DESCRIPTION_MODES IddMonitorGetDefaultModes;
-EVT_IDD_CX_MONITOR_QUERY_TARGET_MODES IddMonitorQueryModes;
-
-EVT_IDD_CX_MONITOR_ASSIGN_SWAPCHAIN IddMonitorAssignSwapChain;
-EVT_IDD_CX_MONITOR_UNASSIGN_SWAPCHAIN IddMonitorUnassignSwapChain;
+EVT_IDD_CX_MONITOR_ASSIGN_SWAPCHAIN Evt_IddMonitorAssignSwapChain;
+EVT_IDD_CX_MONITOR_UNASSIGN_SWAPCHAIN Evt_IddMonitorUnassignSwapChain;
 
 namespace indirect_disp {
     struct Direct3DDevice
     {
-        Direct3DDevice(LUID AdapterLuid);
-        Direct3DDevice();
+        Direct3DDevice() = delete;
+        Direct3DDevice(LUID AdapterLuid) ;
+
         HRESULT Init();
 
-        LUID AdapterLuid;
-        winrt::com_ptr<IDXGIFactory5> DxgiFactory;
-        winrt::com_ptr<IDXGIAdapter1> Adapter;
+		LUID AdapterLuid;
         winrt::com_ptr<ID3D11Device> Device;
         winrt::com_ptr<ID3D11DeviceContext> DeviceContext;
     };
@@ -58,17 +35,28 @@ namespace indirect_disp {
         ~SwapChainProcessor();
 
     private:
+        // A new thread that executes Run()
         static DWORD CALLBACK RunThread(LPVOID Argument);
-
+        
+        // Do preparation and cleanup job for RunCore()
         void Run();
+
+        // Core Processing on Image Data
         void RunCore();
 
     public:
         IDDCX_SWAPCHAIN m_hSwapChain;
         std::shared_ptr<Direct3DDevice> m_Device;
-        HANDLE m_hAvailableBufferEvent;
+        
+        // 
         winrt::handle m_hThread;
+
+        // Imformed by IddCx framework that there's a new image available
+        HANDLE m_hAvailableBufferEvent;
+
+        // Informed by user or our driver to stop processing images
         winrt::handle m_hTerminateEvent;
+
     };
 
     // Provides a sample implementation of an indirect display driver.
@@ -78,7 +66,7 @@ namespace indirect_disp {
         IndirectDeviceContext(_In_ WDFDEVICE WdfDevice);
         virtual ~IndirectDeviceContext();
 
-        void InitAdapter();
+        void D0Entry_InitAdapter();
         void FinishInit();
 
         void AssignSwapChain(IDDCX_SWAPCHAIN SwapChain, LUID RenderAdapter, HANDLE NewFrameEvent);
@@ -96,4 +84,18 @@ namespace indirect_disp {
         static const DISPLAYCONFIG_VIDEO_SIGNAL_INFO s_KnownMonitorModes[];
         static const BYTE s_KnownMonitorEdid[];
     };
+
+	struct IndirectDeviceContextWrapper
+	{
+		IndirectDeviceContext* pIndirectDeviceContext;
+
+		void Cleanup()
+		{
+			delete pIndirectDeviceContext;
+			pIndirectDeviceContext = nullptr;
+		}
+	};
+
+	// This macro creates the methods for accessing an IndirectDeviceContextWrapper as a context for a WDF object
+	WDF_DECLARE_CONTEXT_TYPE(IndirectDeviceContextWrapper);
 }

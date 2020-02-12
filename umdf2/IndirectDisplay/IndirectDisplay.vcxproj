@@ -38,16 +38,20 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Device.c" />
+    <ClCompile Include="Device.cpp" />
     <ClCompile Include="Driver.cpp" />
+    <ClCompile Include="IddCxCallbacks.cpp" />
     <ClCompile Include="IndirectDisp.cpp" />
-    <ClCompile Include="Queue.c" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Queue.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Device.h" />
     <ClInclude Include="Driver.h" />
     <ClInclude Include="IndirectDisp.h" />
-    <ClInclude Include="Public.h" />
+    <ClInclude Include="pch.h" />
     <ClInclude Include="Queue.h" />
   </ItemGroup>
   <ItemGroup>
@@ -202,6 +206,8 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExceptionHandling>Sync</ExceptionHandling>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);OneCoreUAP.lib;avrt.lib</AdditionalDependencies>

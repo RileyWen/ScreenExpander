@@ -14,10 +14,13 @@ Environment:
 
 --*/
 
-#include "driver.h"
+#include "pch.h"
+#include "Device.h"
+#include "Queue.h"
 
-NTSTATUS
-IndirectDisplayCreateDevice(
+
+extern "C"
+NTSTATUS IndirectDisplayCreateDevice(
     _Inout_ PWDFDEVICE_INIT DeviceInit
     )
 /*++
