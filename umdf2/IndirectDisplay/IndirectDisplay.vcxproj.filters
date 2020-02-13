@@ -60,6 +60,9 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files\Precompiled</Filter>
     </ClInclude>
+    <ClInclude Include="Swapchain.h">
+      <Filter>Header Files\IndirectDisp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Driver.cpp">
@@ -79,6 +82,9 @@
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files\Precompiled</Filter>
+    </ClCompile>
+    <ClCompile Include="SwapChain.cpp">
+      <Filter>Source Files\IndirectDisp</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
