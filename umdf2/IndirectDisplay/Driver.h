@@ -16,8 +16,7 @@ Environment:
 #pragma once
 
 #include "pch.h"
-
-#include "Device.h"
+#include "IndirectDisp.h"
 #include "IoControl.h"
 
 // GUID of the interface that allow user application
@@ -29,6 +28,19 @@ Environment:
 DEFINE_GUID (GUID_DEVINTERFACE_IndirectDisplay,
     0x6b06164c,0x8a07,0x4820,0x91,0x39,0x19,0x75,0x8f,0x29,0xe4,0x3e);
 
+struct IndirectDeviceContextWrapper
+{
+	indirect_disp::IndirectMonitor* pIndirectDeviceContext;
+
+	void Cleanup()
+	{
+		delete pIndirectDeviceContext;
+		pIndirectDeviceContext = nullptr;
+	}
+};
+
+// This macro creates the methods for accessing an IndirectDeviceContextWrapper as a context for a WDF object
+WDF_DECLARE_CONTEXT_TYPE(IndirectDeviceContextWrapper);
 
 EXTERN_C_START
 

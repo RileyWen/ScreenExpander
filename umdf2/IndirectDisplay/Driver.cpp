@@ -119,7 +119,7 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 
 	// Create a new device context object and attach it to the WDF device object
 	auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
-	pContext->pIndirectDeviceContext = new IndirectDeviceContext(Device);
+	pContext->pIndirectDeviceContext = new IndirectMonitor(Device);
 	
 	OutputDebugString(L"[IndirectDisp] Exit Evt_IddDeviceAdd\n");
 

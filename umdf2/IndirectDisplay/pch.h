@@ -2,7 +2,10 @@
 
 #include <unknwn.h>
 #include <winrt/base.h>
+
+#include <initguid.h>
 #include <Windows.h>
+
 #include <wdf.h>
 
 
@@ -23,5 +26,6 @@
 
 #include <memory>
 #include <vector>
+
 
 #pragma hdrstop

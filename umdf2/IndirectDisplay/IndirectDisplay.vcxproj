@@ -38,7 +38,6 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Device.cpp" />
     <ClCompile Include="Driver.cpp" />
     <ClCompile Include="IddCxCallbacks.cpp" />
     <ClCompile Include="IndirectDisp.cpp" />
@@ -49,7 +48,6 @@
     <ClCompile Include="SwapChain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Device.h" />
     <ClInclude Include="Driver.h" />
     <ClInclude Include="IndirectDisp.h" />
     <ClInclude Include="pch.h" />

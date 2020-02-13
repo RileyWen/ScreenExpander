@@ -1,15 +1,16 @@
 #include "pch.h"
 #include "IndirectDisp.h"
+#include "Driver.h"
 
 namespace indirect_disp {
 
-#pragma region IndirectDeviceContext
+#pragma region IndirectMonitor
 
 	const UINT64 MHZ = 1000000;
 	const UINT64 KHZ = 1000;
 
 	// A list of modes exposed by the sample monitor EDID - FOR SAMPLE PURPOSES ONLY
-	const DISPLAYCONFIG_VIDEO_SIGNAL_INFO IndirectDeviceContext::s_KnownMonitorModes[] =
+	const DISPLAYCONFIG_VIDEO_SIGNAL_INFO IndirectMonitor::s_KnownMonitorModes[] =
 	{
 		// 800 x 600 @ 60Hz
 		{
@@ -34,7 +35,7 @@ namespace indirect_disp {
 	};
 
 	// This is a sample monitor EDID - FOR SAMPLE PURPOSES ONLY
-	const BYTE IndirectDeviceContext::s_KnownMonitorEdid[] =
+	const BYTE IndirectMonitor::s_KnownMonitorEdid[] =
 	{
 		0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x79,0x5E,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xA6,0x01,0x03,0x80,0x28,
 		0x1E,0x78,0x0A,0xEE,0x91,0xA3,0x54,0x4C,0x99,0x26,0x0F,0x50,0x54,0x20,0x00,0x00,0x01,0x01,0x01,0x01,0x01,0x01,
@@ -44,17 +45,17 @@ namespace indirect_disp {
 		0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x6E
 	};
 
-	IndirectDeviceContext::IndirectDeviceContext(_In_ WDFDEVICE WdfDevice) :
+	IndirectMonitor::IndirectMonitor(_In_ WDFDEVICE WdfDevice) :
 		m_WdfDevice(WdfDevice)
 	{
 	}
 
-	IndirectDeviceContext::~IndirectDeviceContext()
+	IndirectMonitor::~IndirectMonitor()
 	{
 		m_ProcessingThread.reset();
 	}
 
-	void IndirectDeviceContext::D0Entry_InitAdapter()
+	void IndirectMonitor::D0Entry_InitMonitor()
 	{
 		// ==============================
 		// TODO: Update the below diagnostic information in accordance with the target hardware. The strings and version
@@ -100,7 +101,7 @@ namespace indirect_disp {
 		if (NT_SUCCESS(Status))
 		{
 			// Store a reference to the WDF adapter handle
-			m_Adapter = AdapterInitOut.AdapterObject;
+			m_ParentAdapter = AdapterInitOut.AdapterObject;
 
 			// Store the device context object into the WDF object context
 			auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(AdapterInitOut.AdapterObject);
@@ -108,7 +109,7 @@ namespace indirect_disp {
 		}
 	}
 
-	void IndirectDeviceContext::FinishInit()
+	void IndirectMonitor::FinishInit()
 	{
 		// ==============================
 		// TODO: In a real driver, the EDID should be retrieved dynamically from a connected physical monitor. The EDID
@@ -147,10 +148,10 @@ namespace indirect_disp {
 
 		// Create a monitor object with the specified monitor descriptor
 		IDARG_OUT_MONITORCREATE MonitorCreateOut;
-		NTSTATUS Status = IddCxMonitorCreate(m_Adapter, &MonitorCreate, &MonitorCreateOut);
+		NTSTATUS Status = IddCxMonitorCreate(m_ParentAdapter, &MonitorCreate, &MonitorCreateOut);
 		if (NT_SUCCESS(Status))
 		{
-			m_Monitor = MonitorCreateOut.MonitorObject;
+			m_ThisMonitor = MonitorCreateOut.MonitorObject;
 
 			// Associate the monitor with this device context
 			auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(MonitorCreateOut.MonitorObject);
@@ -158,11 +159,11 @@ namespace indirect_disp {
 
 			// Tell the OS that the monitor has been plugged in
 			IDARG_OUT_MONITORARRIVAL ArrivalOut;
-			Status = IddCxMonitorArrival(m_Monitor, &ArrivalOut);
+			Status = IddCxMonitorArrival(m_ThisMonitor, &ArrivalOut);
 		}
 	}
 
-	void IndirectDeviceContext::AssignSwapChain(IDDCX_SWAPCHAIN SwapChain, LUID RenderAdapter, HANDLE NewFrameEvent)
+	void IndirectMonitor::AssignSwapChain(IDDCX_SWAPCHAIN SwapChain, LUID RenderAdapter, HANDLE NewFrameEvent)
 	{
 		m_ProcessingThread.reset();
 
@@ -180,7 +181,7 @@ namespace indirect_disp {
 		}
 	}
 
-	void IndirectDeviceContext::UnassignSwapChain()
+	void IndirectMonitor::UnassignSwapChain()
 	{
 		// Stop processing the last swap-chain
 		m_ProcessingThread.reset();

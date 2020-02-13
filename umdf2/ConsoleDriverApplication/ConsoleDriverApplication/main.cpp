@@ -171,7 +171,7 @@ bool OpenBusInterface() {
 
 #define IOCTL_SND_MSG INDIRECT_DISP_IOCTL(0x0)
 
-	WCHAR msg[] = L"Hello from User Mode App!";
+	WCHAR msg[] = L"Hello from User Mode App!\n";
 	DWORD bytesReturned = 0;
 
 	if (DeviceIoControl(

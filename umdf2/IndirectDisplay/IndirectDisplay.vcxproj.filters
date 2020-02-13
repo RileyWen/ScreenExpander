@@ -48,9 +48,6 @@
     <ClInclude Include="IndirectDisp.h">
       <Filter>Header Files\IndirectDisp</Filter>
     </ClInclude>
-    <ClInclude Include="Device.h">
-      <Filter>Header Files\Driver</Filter>
-    </ClInclude>
     <ClInclude Include="Driver.h">
       <Filter>Header Files\Driver</Filter>
     </ClInclude>
@@ -73,9 +70,6 @@
     </ClCompile>
     <ClCompile Include="IddCxCallbacks.cpp">
       <Filter>Source Files\IndirectDisp</Filter>
-    </ClCompile>
-    <ClCompile Include="Device.cpp">
-      <Filter>Source Files\Driver</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files\Precompiled</Filter>

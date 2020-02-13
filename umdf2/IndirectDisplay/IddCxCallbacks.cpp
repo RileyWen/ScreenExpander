@@ -1,8 +1,9 @@
 #include "pch.h"
 #include "IndirectDisp.h"
+#include "Driver.h"
 
 using namespace std;
-using namespace indirect_disp;
+//using namespace indirect_disp;
 
 _Use_decl_annotations_
 NTSTATUS Evt_IddDeviceD0Entry(WDFDEVICE Device, WDF_POWER_DEVICE_STATE PreviousState)
@@ -12,7 +13,7 @@ NTSTATUS Evt_IddDeviceD0Entry(WDFDEVICE Device, WDF_POWER_DEVICE_STATE PreviousS
     // This function is called by WDF to start the device in the fully-on power state.
 
     auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
-    pContext->pIndirectDeviceContext->D0Entry_InitAdapter();
+    pContext->pIndirectDeviceContext->D0Entry_InitMonitor();
 
     return STATUS_SUCCESS;
 }
@@ -102,7 +103,7 @@ NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* 
         {
             pInArgs->pMonitorModes[ModeIndex].Size = sizeof(IDDCX_MONITOR_MODE);
             pInArgs->pMonitorModes[ModeIndex].Origin = IDDCX_MONITOR_MODE_ORIGIN_MONITORDESCRIPTOR;
-            pInArgs->pMonitorModes[ModeIndex].MonitorVideoSignalInfo = IndirectDeviceContext::s_KnownMonitorModes[ModeIndex];
+            pInArgs->pMonitorModes[ModeIndex].MonitorVideoSignalInfo = indirect_disp::IndirectMonitor::s_KnownMonitorModes[ModeIndex];
         }
 
         // Set the preferred mode as represented in the EDID

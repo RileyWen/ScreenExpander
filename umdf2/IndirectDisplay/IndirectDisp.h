@@ -19,13 +19,13 @@ EVT_IDD_CX_MONITOR_UNASSIGN_SWAPCHAIN Evt_IddMonitorUnassignSwapChain;
 namespace indirect_disp {
 
     // Provides a sample implementation of an indirect display driver.
-    class IndirectDeviceContext
+    class IndirectMonitor
     {
     public:
-        IndirectDeviceContext(_In_ WDFDEVICE WdfDevice);
-        virtual ~IndirectDeviceContext();
+        IndirectMonitor(_In_ WDFDEVICE WdfDevice);
+        virtual ~IndirectMonitor();
 
-        void D0Entry_InitAdapter();
+        void D0Entry_InitMonitor();
         void FinishInit();
 
         void AssignSwapChain(IDDCX_SWAPCHAIN SwapChain, LUID RenderAdapter, HANDLE NewFrameEvent);
@@ -34,8 +34,8 @@ namespace indirect_disp {
     protected:
 
         WDFDEVICE m_WdfDevice;
-        IDDCX_ADAPTER m_Adapter;
-        IDDCX_MONITOR m_Monitor;
+        IDDCX_ADAPTER m_ParentAdapter;
+        IDDCX_MONITOR m_ThisMonitor;
 
         std::unique_ptr<SwapChainProcessor> m_ProcessingThread;
 
@@ -44,17 +44,4 @@ namespace indirect_disp {
         static const BYTE s_KnownMonitorEdid[];
     };
 
-	struct IndirectDeviceContextWrapper
-	{
-		IndirectDeviceContext* pIndirectDeviceContext;
-
-		void Cleanup()
-		{
-			delete pIndirectDeviceContext;
-			pIndirectDeviceContext = nullptr;
-		}
-	};
-
-	// This macro creates the methods for accessing an IndirectDeviceContextWrapper as a context for a WDF object
-	WDF_DECLARE_CONTEXT_TYPE(IndirectDeviceContextWrapper);
 }

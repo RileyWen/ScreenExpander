@@ -16,6 +16,7 @@ Environment:
 
 #include "pch.h"
 #include "IoControl.h"
+#include "Driver.h"
 
 _Use_decl_annotations_
 VOID Evt_IddIoDeviceControl(
@@ -26,12 +27,32 @@ VOID Evt_IddIoDeviceControl(
 	_In_ ULONG IoControlCode
 ) {
 	UNREFERENCED_PARAMETER(Device);
-	UNREFERENCED_PARAMETER(Request);
+	//UNREFERENCED_PARAMETER(Request);
 	UNREFERENCED_PARAMETER(OutputBufferLength);
 	UNREFERENCED_PARAMETER(InputBufferLength);
 	UNREFERENCED_PARAMETER(IoControlCode);
 
-    OutputDebugString(L"Received an IO Request!\n");
+	NTSTATUS status;
+	LPWSTR pMsg;
+	size_t length;
+	
+	// TODO: Define some IOCTL which indicate the arrival or 
+	//		 departure of a virtual monitor.
+
+    auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
+	UNREFERENCED_PARAMETER(pContext);
+    //pContext->pIndirectDeviceContext->D0Entry_InitMonitor();
+
+	status = WdfRequestRetrieveInputBuffer(Request, 0, (PVOID*)&pMsg, &length);
+	if (!NT_SUCCESS(status)) {
+		OutputDebugString(L"WdfRequestRetrieveInputBuffer Failed!\n");
+		WdfRequestComplete(Request, status);
+	}
+		
+    OutputDebugString(L"Received an IO Request: ");
+	OutputDebugString(pMsg);
+
+	WdfRequestComplete(Request, status);
 }
 
 //NTSTATUS
