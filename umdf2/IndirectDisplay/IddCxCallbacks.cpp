@@ -43,14 +43,16 @@ NTSTATUS Evt_IddMonitorUnassignSwapChain(IDDCX_MONITOR MonitorObject)
 _Use_decl_annotations_
 NTSTATUS Evt_IddAdapterInitFinished(IDDCX_ADAPTER AdapterObject, const IDARG_IN_ADAPTER_INIT_FINISHED* pInArgs)
 {
+    UNREFERENCED_PARAMETER(AdapterObject);
+    UNREFERENCED_PARAMETER(pInArgs);
     // This is called when the OS has finished setting up the adapter for use by the IddCx driver. It's now possible
     // to report attached monitors.
 
-    auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(AdapterObject);
-    if (NT_SUCCESS(pInArgs->AdapterInitStatus))
-    {
-        pContext->pIndirectDeviceContext->FinishInit();
-    }
+    //auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(AdapterObject);
+    //if (NT_SUCCESS(pInArgs->AdapterInitStatus))
+    //{
+    //    pContext->pIndirectDeviceContext->FinishInit();
+    //}
 
     return STATUS_SUCCESS;
 }

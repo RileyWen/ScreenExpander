@@ -54,14 +54,14 @@
     <ClInclude Include="Driver.h">
       <Filter>Header Files\Driver</Filter>
     </ClInclude>
-    <ClInclude Include="Queue.h">
-      <Filter>Header Files\Driver</Filter>
-    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Header Files\Precompiled</Filter>
     </ClInclude>
     <ClInclude Include="Swapchain.h">
       <Filter>Header Files\IndirectDisp</Filter>
+    </ClInclude>
+    <ClInclude Include="IoControl.h">
+      <Filter>Header Files\Driver</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -77,14 +77,14 @@
     <ClCompile Include="Device.cpp">
       <Filter>Source Files\Driver</Filter>
     </ClCompile>
-    <ClCompile Include="Queue.cpp">
-      <Filter>Source Files\Driver</Filter>
-    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files\Precompiled</Filter>
     </ClCompile>
     <ClCompile Include="SwapChain.cpp">
       <Filter>Source Files\IndirectDisp</Filter>
+    </ClCompile>
+    <ClCompile Include="IoControl.cpp">
+      <Filter>Source Files\Driver</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

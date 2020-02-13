@@ -45,7 +45,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Queue.cpp" />
+    <ClCompile Include="IoControl.cpp" />
     <ClCompile Include="SwapChain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -53,7 +53,7 @@
     <ClInclude Include="Driver.h" />
     <ClInclude Include="IndirectDisp.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="Queue.h" />
+    <ClInclude Include="IoControl.h" />
     <ClInclude Include="Swapchain.h" />
   </ItemGroup>
   <ItemGroup>

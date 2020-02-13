@@ -34,6 +34,9 @@
       <Platform>ARM64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D7CC47B0-9B89-4222-8B38-DF06EDD7FE29}</ProjectGuid>
     <TemplateGuid>{504102d4-2172-473c-8adf-cd96e308f257}</TemplateGuid>

@@ -17,6 +17,7 @@ Environment:
 #include "pch.h"
 #include "driver.h"
 #include "IndirectDisp.h"
+#include "IoControl.h"
 
 using namespace indirect_disp;
 
@@ -63,7 +64,7 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 
 	// If the driver wishes to handle custom IoDeviceControl requests, it's necessary to use this callback since IddCx
 	// redirects IoDeviceControl requests to an internal queue. This sample does not need this.
-	// IddConfig.EvtIddCxDeviceIoControl = IddIoDeviceControl;
+	IddConfig.EvtIddCxDeviceIoControl = Evt_IddIoDeviceControl;
 
 	IddConfig.EvtIddCxAdapterInitFinished = Evt_IddAdapterInitFinished;
 
@@ -96,6 +97,17 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 	Status = WdfDeviceCreate(&pDeviceInit, &Attr, &Device);
 	if (!NT_SUCCESS(Status))
 	{
+		return Status;
+	}
+
+	Status = WdfDeviceCreateDeviceInterface(
+		Device,
+		(LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
+		NULL // ReferenceString
+	);
+
+	if (!NT_SUCCESS(Status)) {
+		KdPrint(("WdfDeviceCreateDeviceInterface failed 0x%x\n", Status));
 		return Status;
 	}
 
