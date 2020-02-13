@@ -31,7 +31,7 @@ VOID Evt_IddIoDeviceControl(
 	UNREFERENCED_PARAMETER(InputBufferLength);
 	UNREFERENCED_PARAMETER(IoControlCode);
 
-	KdPrint(("Received an IO Request!\n"));
+    OutputDebugString(L"Received an IO Request!\n");
 }
 
 //NTSTATUS

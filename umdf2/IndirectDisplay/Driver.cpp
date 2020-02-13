@@ -15,7 +15,7 @@ Environment:
 --*/
 
 #include "pch.h"
-#include "driver.h"
+#include "Driver.h"
 #include "IndirectDisp.h"
 #include "IoControl.h"
 
@@ -29,6 +29,8 @@ extern "C" NTSTATUS DriverEntry(
 {
 	WDF_DRIVER_CONFIG Config;
 	NTSTATUS Status;
+
+	OutputDebugString(L"[IndirectDisp] DriverEntry \n");
 
 	WDF_OBJECT_ATTRIBUTES Attributes;
 	WDF_OBJECT_ATTRIBUTES_INIT(&Attributes);
@@ -53,6 +55,8 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 	WDF_PNPPOWER_EVENT_CALLBACKS PnpPowerCallbacks;
 
 	UNREFERENCED_PARAMETER(Driver);
+
+	OutputDebugString(L"[IndirectDisp] Evt_IddDeviceAdd\n");
 
 	// Register for power callbacks - in this sample only power-on is needed
 	WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&PnpPowerCallbacks);
@@ -107,7 +111,7 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 	);
 
 	if (!NT_SUCCESS(Status)) {
-		KdPrint(("WdfDeviceCreateDeviceInterface failed 0x%x\n", Status));
+		OutputDebugString(L"WdfDeviceCreateDeviceInterface failed\n");
 		return Status;
 	}
 
@@ -116,6 +120,8 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 	// Create a new device context object and attach it to the WDF device object
 	auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
 	pContext->pIndirectDeviceContext = new IndirectDeviceContext(Device);
+	
+	OutputDebugString(L"[IndirectDisp] Exit Evt_IddDeviceAdd\n");
 
 	return Status;
 }
