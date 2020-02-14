@@ -19,6 +19,8 @@
 
 #include <iddcx/1.2/IddCx.h>
 
+#include <cstdio>
+#include <strsafe.h>
 
 #include <dxgi1_6.h>
 #include <d3d11_4.h>

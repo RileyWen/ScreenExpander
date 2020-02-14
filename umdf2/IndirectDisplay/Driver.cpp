@@ -30,7 +30,7 @@ extern "C" NTSTATUS DriverEntry(
 	WDF_DRIVER_CONFIG Config;
 	NTSTATUS Status;
 
-	OutputDebugString(L"[IndirectDisp] DriverEntry \n");
+	OutputDebugString(L"[IndirDisp] DriverEntry \n");
 
 	WDF_OBJECT_ATTRIBUTES Attributes;
 	WDF_OBJECT_ATTRIBUTES_INIT(&Attributes);
@@ -56,7 +56,7 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 
 	UNREFERENCED_PARAMETER(Driver);
 
-	OutputDebugString(L"[IndirectDisp] Evt_IddDeviceAdd\n");
+	OutputDebugString(L"[IndirDisp] Evt_IddDeviceAdd\n");
 
 	// Register for power callbacks - in this sample only power-on is needed
 	WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&PnpPowerCallbacks);
@@ -121,7 +121,7 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 	auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
 	pContext->pIndirectDeviceContext = new IndirectMonitor(Device);
 	
-	OutputDebugString(L"[IndirectDisp] Exit Evt_IddDeviceAdd\n");
+	OutputDebugString(L"[IndirDisp] Exit Evt_IddDeviceAdd\n");
 
 	return Status;
 }

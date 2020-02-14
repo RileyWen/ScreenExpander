@@ -33,26 +33,52 @@ VOID Evt_IddIoDeviceControl(
 	UNREFERENCED_PARAMETER(IoControlCode);
 
 	NTSTATUS status;
-	LPWSTR pMsg;
-	size_t length;
-	
+	TCHAR DebugBuffer[256];
+
+	LPWSTR pwUserInputBuf = NULL;
+	size_t inputLength = 0;
+
+	LPWSTR pwUserOutputBuf = NULL;
+	size_t outputLength = 0;
+
 	// TODO: Define some IOCTL which indicate the arrival or 
 	//		 departure of a virtual monitor.
 
-    auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
+	auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
 	UNREFERENCED_PARAMETER(pContext);
-    //pContext->pIndirectDeviceContext->D0Entry_InitMonitor();
+	//pContext->pIndirectDeviceContext->D0Entry_InitMonitor();
 
-	status = WdfRequestRetrieveInputBuffer(Request, 0, (PVOID*)&pMsg, &length);
+	status = WdfRequestRetrieveInputBuffer(Request, 0, (PVOID*)&pwUserInputBuf, &inputLength);
 	if (!NT_SUCCESS(status)) {
-		OutputDebugString(L"WdfRequestRetrieveInputBuffer Failed!\n");
+		OutputDebugString(TEXT("[IndirDisp] InWdfRequestRetrieveInputBuffer Failed!\n"));
 		WdfRequestComplete(Request, status);
 	}
-		
-    OutputDebugString(L"Received an IO Request: ");
-	OutputDebugString(pMsg);
 
-	WdfRequestComplete(Request, status);
+	status = WdfRequestRetrieveOutputBuffer(Request, 256, (PVOID*)&pwUserOutputBuf, &outputLength);
+	if (!NT_SUCCESS(status)) {
+		OutputDebugString(TEXT("[IndirDisp] WdfRequestRetrieveOutputBuffer Failed!\n"));
+		WdfRequestComplete(Request, status);
+	}
+
+	StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
+		TEXT("[IndirDisp] IO Request: OutputBuf = 0x%p, OutputBufLength = %zu\n"),
+		pwUserOutputBuf, outputLength);
+
+	OutputDebugString(DebugBuffer);
+
+	TCHAR Resp[] = TEXT("Response from UMDF Driver!");
+	StringCbPrintf(pwUserOutputBuf, outputLength, Resp);
+
+	StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
+		TEXT("[IndirDisp] Now pwUserOutputBuf: %ws\n"),
+		pwUserOutputBuf);
+
+	OutputDebugString(DebugBuffer);
+
+	// Must use WdfRequestCompleteWithInformation to set the 'ByteReturn' field!!
+	// If you just use WdfRequestComplete, OS thinks you're returning 0 bytes
+	// and nothing will be returned to buffer sent by DeviceIoControl!
+	WdfRequestCompleteWithInformation(Request, status, sizeof(Resp));
 }
 
 //NTSTATUS

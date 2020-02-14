@@ -101,7 +101,7 @@ Bus_StaticEnum(
 	}
 
 	WdfDeviceInitSetDeviceType(pDeviceInit, FILE_DEVICE_BUS_EXTENDER);
-	WdfDeviceInitSetExclusive(pDeviceInit, TRUE);
+	WdfDeviceInitSetExclusive(pDeviceInit, FALSE);
 
 	status = WdfPdoInitAssignDeviceID(pDeviceInit, &deviceId);
 	if (!NT_SUCCESS(status))
