@@ -35,7 +35,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ErrorOutput.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="OpenUmdfInterfaceTest.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ErrorOutput.h" />
+    <ClInclude Include="OpenUmdfInterfaceTest.h" />
+    <ClInclude Include="PublicHeader.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D7CC47B0-9B89-4222-8B38-DF06EDD7FE29}</ProjectGuid>

@@ -1,235 +1,165 @@
-#include <iostream>
-#include <stdio.h>
-#include <tchar.h>
-#include <string>
-
-#include <Windows.h>
-#include <SetupAPI.h>
-#include <winioctl.h>
-
-#include <initguid.h>
-// GUID of the interface that allow user application to notify the indirect display driver that a
-// monitor arrives or departs.
-//
-// {6b06164c-8a07-4820-9139-19758f29e43e}
-DEFINE_GUID(GUID_DEVINTERFACE_IndirectDisplay,
-	0x6b06164c, 0x8a07, 0x4820, 0x91, 0x39, 0x19, 0x75, 0x8f, 0x29, 0xe4, 0x3e);
-
-// Also used as DeviceId
-#define INDIRECT_DISPLAY_HARDWARE_IDS TEXT("{6C2DAA24-08C9-4BDF-8791-68DA023EDA11}\\Indirect_Disp\0")
+#include "PublicHeader.h"
+#include "OpenUmdfInterfaceTest.h"
+#include "ErrorOutput.h"
 
 using namespace std;
 
-void PrintCSBackupAPIErrorMessage(DWORD dwErr)
-{
-	WCHAR   wszMsgBuff[512];  // Buffer for text.
+TCHAR PIPE_NAME[] = TEXT("\\\\.\\pipe\\RileyTestPipe");
 
-	DWORD   dwChars;  // Number of chars returned.
+void PipeTest1_ConnectAfterCreated_RecvByPacket() {
+	mutex mux;
+	condition_variable cv;
 
-	// Try to get the message from the system errors.
-	dwChars = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
-		FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		dwErr,
-		0,
-		wszMsgBuff,
-		512,
-		NULL);
+#define BUF_SIZE 128
 
-	if (0 == dwChars)
-	{
-		// The error code did not exist in the system errors.
-		// Try Ntdsbmsg.dll for the error code.
 
-		HINSTANCE hInst;
+	auto pipe_server = [&]() {
+		HANDLE hPipe;
+		_tstring cmd;
+		DWORD bytesWritten;
+		BOOL bResult;
 
-		// Load the library.
-		hInst = LoadLibrary(TEXT("Ntdsbmsg.dll"));
-		if (NULL == hInst)
-		{
-			_tprintf(TEXT("cannot load Ntdsbmsg.dll\n"));
-			exit(1);  // Could 'return' instead of 'exit'.
+		hPipe = CreateNamedPipe(
+			PIPE_NAME,
+			PIPE_ACCESS_OUTBOUND,
+			PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE,
+			1,			// Only 1 instance
+			BUF_SIZE,
+			BUF_SIZE,
+			0,			// Default timeout
+			NULL		// Default security descriptor
+		);
+		if (hPipe == INVALID_HANDLE_VALUE) {
+			cv.notify_one();	// Let client go
+			INFO("[Server] Failed to Create a pipe.\n");
+			GetStrLastError();
+			return;
 		}
 
-		// Try getting message text from ntdsbmsg.
-		dwChars = FormatMessage(FORMAT_MESSAGE_FROM_HMODULE |
-			FORMAT_MESSAGE_IGNORE_INSERTS,
-			hInst,
-			dwErr,
+		INFO("[Server] The pipe is created successfully.\n");
+		cv.notify_one();
+
+		INFO("[Server] Start reading stdin and send to Client\n");
+
+		while (1) {
+			_tcin >> cmd;
+			if (cmd == T("q"))
+				break;
+
+			DWORD bytesToWrite = static_cast<DWORD>(cmd.size() + sizeof(TCHAR));
+
+			bResult = WriteFile(
+				hPipe,
+				cmd.c_str(),
+				bytesToWrite,
+				&bytesWritten,
+				NULL);
+
+			if (!bResult || bytesWritten != bytesToWrite) {
+				INFO("[Server] Failed to write to pipe:");
+				GetStrLastError();
+				break;
+			}
+		}
+
+		INFO("[Server] Closing the pipe...\n");
+
+		FlushFileBuffers(hPipe);
+		DisconnectNamedPipe(hPipe);
+		CloseHandle(hPipe);
+	};
+
+	auto pipe_client = [&]() {
+		HANDLE hPipe;
+		DWORD dwMode;
+		BOOL bResult;
+		TCHAR Buf[BUF_SIZE] = {};
+		DWORD byteRead;
+
+		unique_lock<mutex> lck(mux);
+		cv.wait(lck);
+
+		INFO("[Client] Start connecting the pipe.\n");
+
+		hPipe = CreateFile(
+			PIPE_NAME,
+			GENERIC_READ | FILE_WRITE_ATTRIBUTES,	// It's required by SetNamedPipeHandleState
+			0,										// No sharing
+			NULL,									// Default security attributes
+			OPEN_EXISTING,
 			0,
-			wszMsgBuff,
-			512,
 			NULL);
+		if (hPipe == INVALID_HANDLE_VALUE) {
+			INFO("[Client] Failed to connect to the pipe: ");
+			GetStrLastError();
+			return;
+		}
 
-		// Free the library.
-		FreeLibrary(hInst);
+		dwMode = PIPE_READMODE_MESSAGE;
+		bResult = SetNamedPipeHandleState(
+			hPipe,
+			&dwMode,
+			NULL,
+			NULL);
+		if (!bResult) {
+			INFO("[Client] Failed to set pipe mode: ");
+			GetStrLastError();
+			CloseHandle(hPipe);
+			return;
+		}
 
-	}
+		INFO("[Client] Start receiving messages from Server.\n");
 
-	// Display the error message, or generic text if not found.
-	_tprintf(TEXT("Error value: %d Message: %ws\n"),
-		dwErr,
-		dwChars ? wszMsgBuff : TEXT("Error message not found.\n"));
+		{
+			INFO("[Client] Sleep some seconds...\n");
+			// Sleep some seconds to test whether the data are
+			// received by stream or by packet.
+			this_thread::sleep_for(chrono::seconds(5));
+		}
 
-}
+		do {
+			bResult = ReadFile(
+				hPipe,
+				Buf,
+				BUF_SIZE,
+				&byteRead,
+				NULL);
+			if (!bResult &&
+				GetLastError() != ERROR_MORE_DATA) { // Our buffer is not suffient for the whole data
+				INFO("[Client] Read pipe error: ");
+				GetStrLastError();
+				break;
+			}
 
-bool OpenBusInterface() {
-	HDEVINFO							hardwareDevInfo;
-	SP_DEVICE_INTERFACE_DATA			deviceInterfaceData;
+			_tprintf(T("[Client] Receive from server: %s\n"), Buf);
+		} while (bResult);
 
-	PSP_DEVICE_INTERFACE_DETAIL_DATA	pDeviceInterfaceDetailData = NULL;
-	ULONG								predictedLen = 0;
-	ULONG								requiredLen = 0;
+		CloseHandle(hPipe);
+	};
 
-	HANDLE								hDeviceInterface = INVALID_HANDLE_VALUE;
-
-	bool result = false;
-
-	hardwareDevInfo = SetupDiGetClassDevs(
-		(LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
-		NULL,
-		NULL,
-		(DIGCF_PRESENT | DIGCF_DEVICEINTERFACE)); // Only Devices present & Function class devices
-
-	if (hardwareDevInfo == INVALID_HANDLE_VALUE) {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		return false;
-	}
-
-	deviceInterfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-
-	if (!SetupDiEnumDeviceInterfaces(hardwareDevInfo,
-		0, // Can be NULL since the device is uniquely identified by GUID
-		(LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
-		0,
-		&deviceInterfaceData)) {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp0;
-	}
-
-	std::wcout << TEXT("Enumerate Interface Data Succeed!\n");
-
-	// Get the required buffer size for our SP_DEVICE_INTERFACE_DATA in which stores the detailed
-	// info about the Indirect Display interface
-	SetupDiGetDeviceInterfaceDetail(
-		hardwareDevInfo,
-		&deviceInterfaceData,
-		NULL,
-		0,
-		&requiredLen,
-		NULL);
-	if (ERROR_INSUFFICIENT_BUFFER != GetLastError()) {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp0;
-	}
-	predictedLen = requiredLen;
-
-	std::wcout << TEXT("Probe Interface Data Buffer Length Succeed!\n");
-
-	// Allocate a buffer after getting the required size.
-	pDeviceInterfaceDetailData =
-		(PSP_DEVICE_INTERFACE_DETAIL_DATA)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, predictedLen);
-	if (pDeviceInterfaceDetailData)
-		pDeviceInterfaceDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-	else {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp0;
-	}
-
-	std::wcout << TEXT("Allocate Interface Data Buffer Length Succeed!\n");
-
-	// Get the actual data for the Indirect Display interface
-	if (!SetupDiGetDeviceInterfaceDetail(
-		hardwareDevInfo,
-		&deviceInterfaceData,
-		pDeviceInterfaceDetailData,
-		predictedLen,
-		&requiredLen,
-		NULL)) {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp1;
-	}
-
-
-	std::wcout << L"Query Interface Data Succeed! Path: "
-		<< pDeviceInterfaceDetailData->DevicePath
-		<< std::endl;
-
-	hDeviceInterface = CreateFile(
-		pDeviceInterfaceDetailData->DevicePath,
-		GENERIC_READ | GENERIC_WRITE, // Important!!! Don't forget it!
-		FILE_SHARE_READ | FILE_SHARE_WRITE,
-		NULL,
-		OPEN_EXISTING,
-		0,
-		NULL);
-	if (hDeviceInterface == INVALID_HANDLE_VALUE) {
-		PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp1;
-	}
-
-	std::wcout << L"Create Handle to Interface Data Succeed!\n";
-
-#define INDIRECT_DISP_IOCTL(_index_) \
-	CTL_CODE (FILE_DEVICE_BUS_EXTENDER, _index_, METHOD_BUFFERED, \
-			  FILE_ANY_ACCESS | FILE_READ_DATA | FILE_WRITE_DATA)
-
-#define IOCTL_SND_MSG INDIRECT_DISP_IOCTL(0x0)
-
-	WCHAR pwInputBuffer[] = L"Hello from User Mode App!\n";
-
-	WCHAR pwOutputBuffer[256];
-	DWORD bytesReturned = 0;
-
-	if (!DeviceIoControl(
-		hDeviceInterface,
-		IOCTL_SND_MSG,
-		pwInputBuffer, sizeof(pwInputBuffer),
-		pwOutputBuffer, sizeof(pwOutputBuffer),
-		&bytesReturned, NULL)) {
-		PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp2;
-	}
-
-	std::wcout << "Message returned from driver:" << pwOutputBuffer << endl;
-
-	result = true;
-
-CleanUp2:
-	CloseHandle(hDeviceInterface);
-
-CleanUp1:
-	HeapFree(GetProcessHeap(), 0, pDeviceInterfaceDetailData);
-
-CleanUp0:
-	SetupDiDestroyDeviceInfoList(hardwareDevInfo);
-	return result;
+	thread t1(pipe_server), t2(pipe_client);
+	t1.join();
+	t2.join();
 }
 
 int main() {
-	system("chcp 65001");
+	_tsetlocale(LC_ALL, TEXT("chs"));
 
-	string cmd;
+	_tstring cmd;
 
 	while (true) {
-		cin >> cmd;
+		_tcin >> cmd;
 
-		if (cmd == "o") {
+		if (cmd == T("o")) {
 			if (OpenBusInterface())
-				std::cout << "Call IOCTL Succeeded!\n";
+				INFO("Call IOCTL Succeeded!\n");
 			else
-				std::cout << "Call IOCTL Failed!\n";
+				INFO("Call IOCTL Failed!\n");
 		}
-		else if (cmd == "c") {
-
+		else if (cmd == T("p")) {
+			PipeTest1_ConnectAfterCreated_RecvByPacket();
 		}
-		else if (cmd == "q") {
+		else if (cmd == T("q")) {
 			break;
 		}
 	}

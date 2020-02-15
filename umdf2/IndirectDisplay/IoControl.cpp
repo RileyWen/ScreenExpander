@@ -77,7 +77,8 @@ VOID Evt_IddIoDeviceControl(
 
 	// Must use WdfRequestCompleteWithInformation to set the 'ByteReturn' field!!
 	// If you just use WdfRequestComplete, OS thinks you're returning 0 bytes
-	// and nothing will be returned to buffer sent by DeviceIoControl!
+	// and nothing will be returned to the buffer sent by DeviceIoControl!
+	// Why the hell MSDN Documentation doesn't mention that?
 	WdfRequestCompleteWithInformation(Request, status, sizeof(Resp));
 }
 
