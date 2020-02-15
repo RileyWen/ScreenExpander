@@ -6,4 +6,5 @@
 #include <ntstrsafe.h>
 #include <ntintsafe.h>
 
+#include "SharedDefs.h"
 

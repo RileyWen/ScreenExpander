@@ -16,7 +16,6 @@ Environment:
 
 #include "pch.h"
 #include "Driver.h"
-#include "IndirectDisp.h"
 #include "IoControl.h"
 
 using namespace indirect_disp;
@@ -100,7 +99,7 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 
 	Status = WdfDeviceCreateDeviceInterface(
 		Device,
-		(LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
+		(LPGUID)&GUID_DEVINTERFACE_INDIRECT_DEVICE,
 		NULL // ReferenceString
 	);
 

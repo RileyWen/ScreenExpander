@@ -1,5 +1,7 @@
 #include "pch.h"
-#include "IndirectDisp.h"
+
+#include "IndirectAdapter.h"
+#include "IndirectMonitor.h"
 #include "Driver.h"
 
 using namespace std;

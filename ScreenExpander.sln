@@ -25,6 +25,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IndirectDisplayDrvPkg", "um
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConsoleDriverApplication", "umdf2\ConsoleDriverApplication\ConsoleDriverApplication.vcxproj", "{D7CC47B0-9B89-4222-8B38-DF06EDD7FE29}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "public_headers", "public_headers", "{7EDFB548-A78C-4E3F-8ADD-935992B578D7}"
+	ProjectSection(SolutionItems) = preProject
+		public_headers\SharedDefs.h = public_headers\SharedDefs.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM

@@ -15,7 +15,7 @@ bool OpenBusInterface() {
     bool result = false;
 
     hardwareDevInfo = SetupDiGetClassDevs(
-        (LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
+        (LPGUID)&GUID_DEVINTERFACE_INDIRECT_DEVICE,
         NULL,
         NULL,
         (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE)); // Only Devices present & Function class devices
@@ -29,7 +29,7 @@ bool OpenBusInterface() {
 
     if (!SetupDiEnumDeviceInterfaces(hardwareDevInfo,
         0, // Can be NULL since the device is uniquely identified by GUID
-        (LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
+        (LPGUID)&GUID_DEVINTERFACE_INDIRECT_DEVICE,
         0,
         &deviceInterfaceData)) {
         //PrintCSBackupAPIErrorMessage(GetLastError());

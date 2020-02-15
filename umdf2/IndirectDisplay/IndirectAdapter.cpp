@@ -1,11 +1,10 @@
 #include "pch.h"
-#include "IndirectDisp.h"
+
 #include "Driver.h"
+#include "IndirectAdapter.h"
+#include "IndirectMonitor.h"
 
 namespace indirect_disp {
-
-#pragma region IndirectMonitor
-
     const UINT64 MHZ = 1000000;
     const UINT64 KHZ = 1000;
 
@@ -45,15 +44,6 @@ namespace indirect_disp {
         0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x6E
     };
 
-
-    IndirectMonitor::IndirectMonitor(IDDCX_MONITOR IddCxMonitor) : m_ThisMonitor(IddCxMonitor)
-    {
-    }
-
-    IndirectMonitor::~IndirectMonitor()
-    {
-        m_ProcessingThread.reset();
-    }
 
     void IndirectAdapter::IndirectAdapterInit()
     {
@@ -182,31 +172,4 @@ namespace indirect_disp {
         }
         return true;
     }
-
-    void IndirectMonitor::AssignSwapChain(IDDCX_SWAPCHAIN SwapChain, LUID RenderAdapter, HANDLE NewFrameEvent)
-    {
-        m_ProcessingThread.reset();
-
-        auto Device = std::make_shared<Direct3DDevice>(RenderAdapter);
-        if (FAILED(Device->Init()))
-        {
-            // It's important to delete the swap-chain if D3D initialization fails, so that the OS knows to generate a new
-            // swap-chain and try again.
-            WdfObjectDelete(SwapChain);
-        }
-        else
-        {
-            // Create a new swap-chain processing thread
-            m_ProcessingThread.reset(new SwapChainProcessor(SwapChain, Device, NewFrameEvent));
-        }
-    }
-
-    void IndirectMonitor::UnassignSwapChain()
-    {
-        // Stop processing the last swap-chain
-        m_ProcessingThread.reset();
-    }
-
-#pragma endregion
-
 }

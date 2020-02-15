@@ -45,9 +45,6 @@
     </Inf>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="IndirectDisp.h">
-      <Filter>Header Files\IndirectDisp</Filter>
-    </ClInclude>
     <ClInclude Include="Driver.h">
       <Filter>Header Files\Driver</Filter>
     </ClInclude>
@@ -60,13 +57,16 @@
     <ClInclude Include="IoControl.h">
       <Filter>Header Files\Driver</Filter>
     </ClInclude>
+    <ClInclude Include="IndirectAdapter.h">
+      <Filter>Header Files\IndirectDisp</Filter>
+    </ClInclude>
+    <ClInclude Include="IndirectMonitor.h">
+      <Filter>Header Files\IndirectDisp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Driver.cpp">
       <Filter>Source Files\Driver</Filter>
-    </ClCompile>
-    <ClCompile Include="IndirectDisp.cpp">
-      <Filter>Source Files\IndirectDisp</Filter>
     </ClCompile>
     <ClCompile Include="IddCxCallbacks.cpp">
       <Filter>Source Files\IndirectDisp</Filter>
@@ -79,6 +79,12 @@
     </ClCompile>
     <ClCompile Include="IoControl.cpp">
       <Filter>Source Files\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="IndirectAdapter.cpp">
+      <Filter>Source Files\IndirectDisp</Filter>
+    </ClCompile>
+    <ClCompile Include="IndirectMonitor.cpp">
+      <Filter>Source Files\IndirectDisp</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
