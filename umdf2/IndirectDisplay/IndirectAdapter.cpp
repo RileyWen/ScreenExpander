@@ -5,48 +5,14 @@
 #include "IndirectMonitor.h"
 
 namespace indirect_disp {
-    const UINT64 MHZ = 1000000;
-    const UINT64 KHZ = 1000;
 
-    // A list of modes exposed by the sample monitor EDID - FOR SAMPLE PURPOSES ONLY
-    const DISPLAYCONFIG_VIDEO_SIGNAL_INFO IndirectAdapter::s_KnownMonitorModes[] =
+    IndirectAdapter::IndirectAdapter(WDFDEVICE Device) : m_WdfDevice(Device)
     {
-        // 800 x 600 @ 60Hz
-        {
-              40 * MHZ,                                      // pixel clock rate [Hz]
-            { 40 * MHZ, 800 + 256 },                         // fractional horizontal refresh rate [Hz]
-            { 40 * MHZ, (800 + 256) * (600 + 28) },          // fractional vertical refresh rate [Hz]
-            { 800, 600 },                                    // (horizontal, vertical) active pixel resolution
-            { 800 + 256, 600 + 28 },                         // (horizontal, vertical) total pixel resolution
-            { { 255, 0 }},                                   // video standard and vsync divider
-            DISPLAYCONFIG_SCANLINE_ORDERING_PROGRESSIVE
-        },
-        // 640 x 480 @ 60Hz
-        {
-              25175 * KHZ,                                   // pixel clock rate [Hz]
-            { 25175 * KHZ, 640 + 160 },                      // fractional horizontal refresh rate [Hz]
-            { 25175 * KHZ, (640 + 160) * (480 + 46) },       // fractional vertical refresh rate [Hz]
-            { 640, 480 },                                    // (horizontal, vertical) active pixel resolution
-            { 640 + 160, 480 + 46 },                         // (horizontal, vertical) blanking pixel resolution
-            { { 255, 0 } },                                  // video standard and vsync divider
-            DISPLAYCONFIG_SCANLINE_ORDERING_PROGRESSIVE
-        },
-    };
+        m_ThisAdapter = nullptr;
 
-    // This is a sample monitor EDID - FOR SAMPLE PURPOSES ONLY
-    const BYTE IndirectAdapter::s_KnownMonitorEdid[] =
-    {
-        0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x79,0x5E,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xA6,0x01,0x03,0x80,0x28,
-        0x1E,0x78,0x0A,0xEE,0x91,0xA3,0x54,0x4C,0x99,0x26,0x0F,0x50,0x54,0x20,0x00,0x00,0x01,0x01,0x01,0x01,0x01,0x01,
-        0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0xA0,0x0F,0x20,0x00,0x31,0x58,0x1C,0x20,0x28,0x80,0x14,0x00,
-        0x90,0x2C,0x11,0x00,0x00,0x1E,0x00,0x00,0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x00,0x00,0x00,0x00,0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-        0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x6E
-    };
+        m_pIddCxMonitorInfo = new IDDCX_MONITOR_INFO;
+        ZeroMemory(m_pIddCxMonitorInfo, sizeof(IDDCX_MONITOR_INFO));
 
-
-    void IndirectAdapter::IndirectAdapterInit()
-    {
         // ==============================
         // TODO: Update the below diagnostic information in accordance with the target hardware. The strings and version
         // numbers are used for telemetry and may be displayed to the user in some situations.
@@ -77,7 +43,10 @@ namespace indirect_disp {
 
         // Initialize a WDF context that can store a pointer to the device context object
         WDF_OBJECT_ATTRIBUTES Attr;
-        WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&Attr, IndirectMonitorContext);
+        WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&Attr, IndirectAdapterContext);
+        // No need to specify cleanup callback here since we have already specified it when
+        // declaring the WDF Object Attr of the underlying device (notice the underlying device
+        // and the indirect adapter is a 1-to-1 mapping).
 
         IDARG_IN_ADAPTER_INIT AdapterInit = {};
         AdapterInit.WdfDevice = m_WdfDevice;
@@ -93,11 +62,39 @@ namespace indirect_disp {
             // Store a reference to the WDF adapter handle
             m_ThisAdapter = AdapterInitOut.AdapterObject;
 
-            // Store the device context object into the WDF object context
-            auto* pContext = WdfObjectGet_IndirectAdapterContext(AdapterInitOut.AdapterObject);
+            auto* pContext = WdfObjectGet_IndirectAdapterContext(m_ThisAdapter);
             pContext->pIndirectAdapter = this;
+
+            OutputDebugString(TEXT("[IndirDisp] IddCxAdapterInitAsync succeeded!\n"));
+        }
+        else {
+            TCHAR DebugBuffer[128];
+
+            StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
+                TEXT("[IndirDisp] IddCxAdapterInitAsync failed: 0x%x\n"),
+                Status);
+            OutputDebugString(DebugBuffer);
         }
     }
+
+    IndirectAdapter::~IndirectAdapter() {
+        delete m_pIddCxMonitorInfo;
+
+        // No need to delete 'IndirectMonitor*'s in 'm_pChildMonitors'
+        // since we have binded a callback on Wdf Object to clean them up.
+    }
+
+    // This is a sample monitor EDID - FOR SAMPLE PURPOSES ONLY
+    const BYTE IndirectAdapter::s_KnownMonitorEdid[] =
+    {
+        0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x79,0x5E,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xA6,0x01,0x03,0x80,0x28,
+        0x1E,0x78,0x0A,0xEE,0x91,0xA3,0x54,0x4C,0x99,0x26,0x0F,0x50,0x54,0x20,0x00,0x00,0x01,0x01,0x01,0x01,0x01,0x01,
+        0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0xA0,0x0F,0x20,0x00,0x31,0x58,0x1C,0x20,0x28,0x80,0x14,0x00,
+        0x90,0x2C,0x11,0x00,0x00,0x1E,0x00,0x00,0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x00,0x00,0x00,0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x6E
+    };
+
 
     void IndirectAdapter::IndirectAdapterFinishInit()
     {
@@ -172,4 +169,33 @@ namespace indirect_disp {
         }
         return true;
     }
+
+    const UINT64 MHZ = 1000000;
+    const UINT64 KHZ = 1000;
+
+    // A list of modes exposed by the sample monitor EDID - FOR SAMPLE PURPOSES ONLY
+    const DISPLAYCONFIG_VIDEO_SIGNAL_INFO IndirectAdapter::s_KnownMonitorModes[] =
+    {
+        // 800 x 600 @ 60Hz
+        {
+              40 * MHZ,                                      // pixel clock rate [Hz]
+            { 40 * MHZ, 800 + 256 },                         // fractional horizontal refresh rate [Hz]
+            { 40 * MHZ, (800 + 256) * (600 + 28) },          // fractional vertical refresh rate [Hz]
+            { 800, 600 },                                    // (horizontal, vertical) active pixel resolution
+            { 800 + 256, 600 + 28 },                         // (horizontal, vertical) total pixel resolution
+            { { 255, 0 }},                                   // video standard and vsync divider
+            DISPLAYCONFIG_SCANLINE_ORDERING_PROGRESSIVE
+        },
+        // 640 x 480 @ 60Hz
+        {
+              25175 * KHZ,                                   // pixel clock rate [Hz]
+            { 25175 * KHZ, 640 + 160 },                      // fractional horizontal refresh rate [Hz]
+            { 25175 * KHZ, (640 + 160) * (480 + 46) },       // fractional vertical refresh rate [Hz]
+            { 640, 480 },                                    // (horizontal, vertical) active pixel resolution
+            { 640 + 160, 480 + 46 },                         // (horizontal, vertical) blanking pixel resolution
+            { { 255, 0 } },                                  // video standard and vsync divider
+            DISPLAYCONFIG_SCANLINE_ORDERING_PROGRESSIVE
+        },
+    };
+
 }

@@ -1,27 +1,53 @@
 #include "pch.h"
 
+#include "IddCxCallbacks.h"
 #include "IndirectAdapter.h"
 #include "IndirectMonitor.h"
 #include "Driver.h"
 
 using namespace std;
 
+#pragma region Indirect Adapter Callback Forwarding
+
+// Original comment: This function is called by WDF to start the 
+//                   device (or Adapter) in the fully-on power state.
+//
+// Called when the device underlying the virtual indirect adatper is ready.
+//
 _Use_decl_annotations_
 NTSTATUS Evt_IddDeviceD0Entry(WDFDEVICE Device, WDF_POWER_DEVICE_STATE PreviousState)
 {
-    // This function is called by WDF to start the device (or Adapter) in the fully-on power state.
-    UNREFERENCED_PARAMETER(Device);
     UNREFERENCED_PARAMETER(PreviousState);
-    
+
+    // Initialize the indirect adapter since the underlying device is ready.
+	auto* pAdapterContext = WdfObjectGet_IndirectAdapterContext(Device);
+    pAdapterContext->pIndirectAdapter = new indirect_disp::IndirectAdapter(Device);
+
     OutputDebugString(TEXT("[IndirDisp] Enter Evt_IddDeviceD0Entry\n"));
-
-
-    //auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
-    //pContext->pIndirectMonitor->IndirectAdapterInit();
 
     return STATUS_SUCCESS;
 }
 
+_Use_decl_annotations_
+NTSTATUS Evt_IddAdapterInitFinished(IDDCX_ADAPTER AdapterObject, const IDARG_IN_ADAPTER_INIT_FINISHED* pInArgs)
+{
+    OutputDebugString(TEXT("[IndirDisp] Enter Evt_IddAdapterInitFinished\n"));
+
+    // This is called when the OS has finished setting up the adapter for use by the IddCx driver. It's now possible
+    // to report attached monitors.
+
+    auto* pContext = WdfObjectGet_IndirectAdapterContext(AdapterObject);
+    if (NT_SUCCESS(pInArgs->AdapterInitStatus))
+    {
+        pContext->pIndirectAdapter->IndirectAdapterFinishInit();
+    }
+
+    return STATUS_SUCCESS;
+}
+
+#pragma endregion
+
+#pragma region Indirect Monitor Callback Forwarding
 
 // Called by IddCx after the driver calls 'IddCxMonitorArrival'
 // since the IDDCX_SWAPCHAIN is a child of the IDDCX_MONITOR.
@@ -45,47 +71,9 @@ NTSTATUS Evt_IddMonitorUnassignSwapChain(IDDCX_MONITOR MonitorObject)
     return STATUS_SUCCESS;
 }
 
-_Use_decl_annotations_
-NTSTATUS Evt_IddAdapterInitFinished(IDDCX_ADAPTER AdapterObject, const IDARG_IN_ADAPTER_INIT_FINISHED* pInArgs)
-{
-    OutputDebugString(TEXT("[IndirDisp] Enter IndirectMonitor::IndirectAdapterFinishInit\n"));
+#pragma endregion
 
-    UNREFERENCED_PARAMETER(AdapterObject);
-    UNREFERENCED_PARAMETER(pInArgs);
-    // This is called when the OS has finished setting up the adapter for use by the IddCx driver. It's now possible
-    // to report attached monitors.
-
-    //auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(AdapterObject);
-    //if (NT_SUCCESS(pInArgs->AdapterInitStatus))
-    //{
-    //    pContext->pIndirectMonitor->IndirectAdapterFinishInit();
-    //}
-
-    return STATUS_SUCCESS;
-}
-
-
-// Callbacks that actually do something.
-
-_Use_decl_annotations_
-NTSTATUS Evt_IddAdapterCommitModes(IDDCX_ADAPTER AdapterObject, const IDARG_IN_COMMITMODES* pInArgs)
-{
-    UNREFERENCED_PARAMETER(AdapterObject);
-    UNREFERENCED_PARAMETER(pInArgs);
-
-    // For the sample, do nothing when modes are picked - the swap-chain is taken care of by IddCx
-
-    // ==============================
-    // TODO: In a real driver, this function would be used to reconfigure the device to commit the new modes. Loop
-    // through pInArgs->pPaths and look for IDDCX_PATH_FLAGS_ACTIVE. Any path not active is inactive (e.g. the monitor
-    // should be turned off).
-    // ==============================
-
-    return STATUS_SUCCESS;
-}
-
-// Just Manually COUNT the # of modes!
-const DWORD MonitorModesCount = 2;
+#pragma region Indirect Monitor Callbacks that actually do something
 
 _Use_decl_annotations_
 NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* pInArgs, IDARG_OUT_PARSEMONITORDESCRIPTION* pOutArgs)
@@ -94,6 +82,9 @@ NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* 
     // TODO: In a real driver, this function would be called to generate monitor modes for an EDID by parsing it. In
     // this sample driver, we hard-code the EDID, so this function can generate known modes.
     // ==============================
+
+    // Just Manually COUNT the # of modes!
+    const DWORD MonitorModesCount = 2;
 
     pOutArgs->MonitorModeBufferOutputCount = MonitorModesCount;
 
@@ -105,7 +96,7 @@ NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* 
     else
     {
         // Copy the known modes to the output buffer
-        for (DWORD ModeIndex = 0; ModeIndex <  MonitorModesCount; ModeIndex++)
+        for (DWORD ModeIndex = 0; ModeIndex < MonitorModesCount; ModeIndex++)
         {
             pInArgs->pMonitorModes[ModeIndex].Size = sizeof(IDDCX_MONITOR_MODE);
             pInArgs->pMonitorModes[ModeIndex].Origin = IDDCX_MONITOR_MODE_ORIGIN_MONITORDESCRIPTOR;
@@ -117,25 +108,6 @@ NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* 
 
         return STATUS_SUCCESS;
     }
-}
-
-_Use_decl_annotations_
-NTSTATUS Evt_IddMonitorGetDefaultModes(IDDCX_MONITOR MonitorObject, const IDARG_IN_GETDEFAULTDESCRIPTIONMODES* pInArgs, IDARG_OUT_GETDEFAULTDESCRIPTIONMODES* pOutArgs)
-{
-    UNREFERENCED_PARAMETER(MonitorObject);
-    UNREFERENCED_PARAMETER(pInArgs);
-    UNREFERENCED_PARAMETER(pOutArgs);
-
-    // Should never be called since we create a single monitor with a known EDID in this sample driver.
-
-    // ==============================
-    // TODO: In a real driver, this function would be called to generate monitor modes for a monitor with no EDID.
-    // Drivers should report modes that are guaranteed to be supported by the transport protocol and by nearly all
-    // monitors (such 640x480, 800x600, or 1024x768). If the driver has access to monitor modes from a descriptor other
-    // than an EDID, those modes would also be reported here.
-    // ==============================
-
-    return STATUS_NOT_IMPLEMENTED;
 }
 
 /// <summary>
@@ -185,4 +157,46 @@ NTSTATUS Evt_IddMonitorQueryModes(IDDCX_MONITOR MonitorObject, const IDARG_IN_QU
 
     return STATUS_SUCCESS;
 }
+
+#pragma endregion
+
+#pragma region Do-nothing Functions
+
+_Use_decl_annotations_
+NTSTATUS Evt_IddAdapterCommitModes(IDDCX_ADAPTER AdapterObject, const IDARG_IN_COMMITMODES* pInArgs)
+{
+    UNREFERENCED_PARAMETER(AdapterObject);
+    UNREFERENCED_PARAMETER(pInArgs);
+
+    // For the sample, do nothing when modes are picked - the swap-chain is taken care of by IddCx
+
+    // ==============================
+    // TODO: In a real driver, this function would be used to reconfigure the device to commit the new modes. Loop
+    // through pInArgs->pPaths and look for IDDCX_PATH_FLAGS_ACTIVE. Any path not active is inactive (e.g. the monitor
+    // should be turned off).
+    // ==============================
+
+    return STATUS_SUCCESS;
+}
+
+_Use_decl_annotations_
+NTSTATUS Evt_IddMonitorGetDefaultModes(IDDCX_MONITOR MonitorObject, const IDARG_IN_GETDEFAULTDESCRIPTIONMODES* pInArgs, IDARG_OUT_GETDEFAULTDESCRIPTIONMODES* pOutArgs)
+{
+    UNREFERENCED_PARAMETER(MonitorObject);
+    UNREFERENCED_PARAMETER(pInArgs);
+    UNREFERENCED_PARAMETER(pOutArgs);
+
+    // Should never be called since we create a single monitor with a known EDID in this sample driver.
+
+    // ==============================
+    // TODO: In a real driver, this function would be called to generate monitor modes for a monitor with no EDID.
+    // Drivers should report modes that are guaranteed to be supported by the transport protocol and by nearly all
+    // monitors (such 640x480, 800x600, or 1024x768). If the driver has access to monitor modes from a descriptor other
+    // than an EDID, those modes would also be reported here.
+    // ==============================
+
+    return STATUS_NOT_IMPLEMENTED;
+}
+
+#pragma endregion
 

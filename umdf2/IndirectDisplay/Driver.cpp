@@ -17,6 +17,7 @@ Environment:
 #include "pch.h"
 #include "Driver.h"
 #include "IoControl.h"
+#include "IddCxCallbacks.h"
 
 using namespace indirect_disp;
 
@@ -51,19 +52,17 @@ _Use_decl_annotations_
 NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
-	//WDF_PNPPOWER_EVENT_CALLBACKS PnpPowerCallbacks;
+	WDF_PNPPOWER_EVENT_CALLBACKS PnpPowerCallbacks;
 
 	UNREFERENCED_PARAMETER(Driver);
 
 	OutputDebugString(L"[IndirDisp] Evt_IddDeviceAdd\n");
 
-	// Now we control the adapter through DeviceIoControl, so we don't need this anymore
-	//
 	// Register for power callbacks - in this sample only power-on is needed
 	//
-	//WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&PnpPowerCallbacks);
-	//PnpPowerCallbacks.EvtDeviceD0Entry = Evt_IddDeviceD0Entry;
-	//WdfDeviceInitSetPnpPowerEventCallbacks(pDeviceInit, &PnpPowerCallbacks);
+	WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&PnpPowerCallbacks);
+	PnpPowerCallbacks.EvtDeviceD0Entry = Evt_IddDeviceD0Entry;
+	WdfDeviceInitSetPnpPowerEventCallbacks(pDeviceInit, &PnpPowerCallbacks);
 
 	IDD_CX_CLIENT_CONFIG IddConfig;
 	IDD_CX_CLIENT_CONFIG_INIT(&IddConfig);
@@ -89,6 +88,15 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 
 	WDF_OBJECT_ATTRIBUTES Attr;
 	WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&Attr, IndirectAdapterContext);
+    Attr.EvtCleanupCallback = [](WDFOBJECT Object)
+    {
+        // Automatically cleanup the context when the WDF object is about to be deleted
+        auto* pContext = WdfObjectGet_IndirectAdapterContext(Object);
+        if (pContext)
+        {
+            pContext->Cleanup();
+        }
+    };
 
 	WDFDEVICE Device = nullptr;
 	Status = WdfDeviceCreate(&pDeviceInit, &Attr, &Device);
@@ -104,17 +112,13 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 	);
 
 	if (!NT_SUCCESS(Status)) {
-		OutputDebugString(L"WdfDeviceCreateDeviceInterface failed\n");
+		OutputDebugString(L"WdfDeviceCreateDeviceInterface failed.\n");
 		return Status;
 	}
 
 	Status = IddCxDeviceInitialize(Device);
 
-	// Create a new device (or adatper) context object and attach it to the WDF device object
-	auto* pAdapterContext = WdfObjectGet_IndirectAdapterContext(Device);
-	ZeroMemory(pAdapterContext, sizeof(IndirectAdapterContext));
-	
-	OutputDebugString(L"[IndirDisp] Adapter Context Zeroed. Exit Evt_IddDeviceAdd.\n");
+	OutputDebugString(L"[IndirDisp] Exit Evt_IddDeviceAdd.\n");
 
 	return Status;
 }

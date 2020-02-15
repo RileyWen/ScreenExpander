@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Driver.h" />
+    <ClInclude Include="IddCxCallbacks.h" />
     <ClInclude Include="IndirectAdapter.h" />
     <ClInclude Include="IndirectMonitor.h" />
     <ClInclude Include="pch.h" />

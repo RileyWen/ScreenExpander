@@ -104,12 +104,6 @@ bool OpenBusInterface() {
 
     std::wcout << L"Create Handle to Interface Data Succeed!\n";
 
-#define INDIRECT_DISP_IOCTL(_index_) \
-    CTL_CODE (FILE_DEVICE_BUS_EXTENDER, _index_, METHOD_BUFFERED, \
-              FILE_ANY_ACCESS | FILE_READ_DATA | FILE_WRITE_DATA)
-
-#define IOCTL_SND_MSG INDIRECT_DISP_IOCTL(0x0)
-
     WCHAR pwInputBuffer[] = L"Hello from User Mode App!\n";
 
     WCHAR pwOutputBuffer[256];
@@ -117,7 +111,7 @@ bool OpenBusInterface() {
 
     if (!DeviceIoControl(
         hDeviceInterface,
-        IOCTL_SND_MSG,
+        IOCTL_NEW_MONITOR,
         pwInputBuffer, sizeof(pwInputBuffer),
         pwOutputBuffer, sizeof(pwOutputBuffer),
         &bytesReturned, NULL)) {

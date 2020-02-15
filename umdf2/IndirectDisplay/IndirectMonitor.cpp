@@ -13,8 +13,6 @@ namespace indirect_disp {
         m_ProcessingThread.reset();
     }
 
-
-
     void IndirectMonitor::AssignSwapChain(IDDCX_SWAPCHAIN SwapChain, LUID RenderAdapter, HANDLE NewFrameEvent)
     {
         m_ProcessingThread.reset();

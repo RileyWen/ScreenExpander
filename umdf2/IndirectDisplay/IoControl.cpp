@@ -2,15 +2,15 @@
 
 Module Name:
 
-	queue.c
+    queue.c
 
 Abstract:
 
-	This file contains the queue entry points and callbacks.
+    This file contains the queue entry points and callbacks.
 
 Environment:
 
-	User-mode Driver Framework 2
+    User-mode Driver Framework 2
 
 --*/
 
@@ -20,66 +20,74 @@ Environment:
 
 _Use_decl_annotations_
 VOID Evt_IddIoDeviceControl(
-	_In_ WDFDEVICE Device,
-	_In_ WDFREQUEST Request,
-	_In_ size_t OutputBufferLength,
-	_In_ size_t InputBufferLength,
-	_In_ ULONG IoControlCode
+    _In_ WDFDEVICE Device,
+    _In_ WDFREQUEST Request,
+    _In_ size_t OutputBufferLength,
+    _In_ size_t InputBufferLength,
+    _In_ ULONG IoControlCode
 ) {
-	UNREFERENCED_PARAMETER(Device);
-	//UNREFERENCED_PARAMETER(Request);
-	UNREFERENCED_PARAMETER(OutputBufferLength);
-	UNREFERENCED_PARAMETER(InputBufferLength);
-	UNREFERENCED_PARAMETER(IoControlCode);
+    //UNREFERENCED_PARAMETER(Device);
+    //UNREFERENCED_PARAMETER(Request);
+    UNREFERENCED_PARAMETER(OutputBufferLength);
+    UNREFERENCED_PARAMETER(InputBufferLength);
+    //UNREFERENCED_PARAMETER(IoControlCode);
 
-	NTSTATUS status;
-	TCHAR DebugBuffer[256];
+    NTSTATUS status;
+    TCHAR DebugBuffer[256];
 
-	LPWSTR pwUserInputBuf = NULL;
-	size_t inputLength = 0;
+    LPWSTR pwUserInputBuf = NULL;
+    size_t inputLength = 0;
 
-	LPWSTR pwUserOutputBuf = NULL;
-	size_t outputLength = 0;
+    LPWSTR pwUserOutputBuf = NULL;
+    size_t outputLength = 0;
 
-	// TODO: Define some IOCTL which indicate the arrival or 
-	//		 departure of a virtual monitor.
+    auto* pContext = WdfObjectGet_IndirectAdapterContext(Device);
+    auto* pIndirectAdapter = pContext->pIndirectAdapter;
 
-	auto* pContext = WdfObjectGet_IndirectMonitorContext(Device);
-	UNREFERENCED_PARAMETER(pContext);
-	//pContext->pIndirectMonitor->IndirectAdapterInit();
+    // Since adapter is null, we cannot attach new monitors to it.
+    if (pIndirectAdapter->IsAdapterNull())
+        WdfRequestComplete(Request, STATUS_OPEN_FAILED);
 
-	status = WdfRequestRetrieveInputBuffer(Request, 0, (PVOID*)&pwUserInputBuf, &inputLength);
-	if (!NT_SUCCESS(status)) {
-		OutputDebugString(TEXT("[IndirDisp] InWdfRequestRetrieveInputBuffer Failed!\n"));
-		WdfRequestComplete(Request, status);
-	}
+    switch (IoControlCode)
+    {
+    case IOCTL_NEW_MONITOR:
 
-	status = WdfRequestRetrieveOutputBuffer(Request, 256, (PVOID*)&pwUserOutputBuf, &outputLength);
-	if (!NT_SUCCESS(status)) {
-		OutputDebugString(TEXT("[IndirDisp] WdfRequestRetrieveOutputBuffer Failed!\n"));
-		WdfRequestComplete(Request, status);
-	}
+        status = WdfRequestRetrieveInputBuffer(Request, 0, (PVOID*)&pwUserInputBuf, &inputLength);
+        if (!NT_SUCCESS(status)) {
+            OutputDebugString(TEXT("[IndirDisp] InWdfRequestRetrieveInputBuffer Failed!\n"));
+            WdfRequestComplete(Request, status);
+        }
 
-	StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
-		TEXT("[IndirDisp] IO Request: OutputBuf = 0x%p, OutputBufLength = %zu\n"),
-		pwUserOutputBuf, outputLength);
+        status = WdfRequestRetrieveOutputBuffer(Request, 256, (PVOID*)&pwUserOutputBuf, &outputLength);
+        if (!NT_SUCCESS(status)) {
+            OutputDebugString(TEXT("[IndirDisp] WdfRequestRetrieveOutputBuffer Failed!\n"));
+            WdfRequestComplete(Request, status);
+        }
 
-	OutputDebugString(DebugBuffer);
+        StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
+            TEXT("[IndirDisp] IO Request: OutputBuf = 0x%p, OutputBufLength = %zu\n"),
+            pwUserOutputBuf, outputLength);
 
-	TCHAR Resp[] = TEXT("Response from UMDF Driver!");
-	StringCbPrintf(pwUserOutputBuf, outputLength, Resp);
+        OutputDebugString(DebugBuffer);
 
-	StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
-		TEXT("[IndirDisp] Now pwUserOutputBuf: %ws\n"),
-		pwUserOutputBuf);
+        StringCbPrintf(pwUserOutputBuf, outputLength, TEXT("Response from UMDF Driver!"));
 
-	OutputDebugString(DebugBuffer);
+        StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
+            TEXT("[IndirDisp] Now pwUserOutputBuf: %ws\n"),
+            pwUserOutputBuf);
 
-	// Must use WdfRequestCompleteWithInformation to set the 'ByteReturn' field!!
-	// If you just use WdfRequestComplete, OS thinks you're returning 0 bytes
-	// and nothing will be returned to the buffer sent by DeviceIoControl!
-	// Why the hell MSDN Documentation doesn't mention that?
-	WdfRequestCompleteWithInformation(Request, status, sizeof(Resp));
+        OutputDebugString(DebugBuffer);
+
+        // Must use WdfRequestCompleteWithInformation to set the 'ByteReturn' field!!
+        // If you just use WdfRequestComplete, OS thinks you're returning 0 bytes
+        // and nothing will be returned to the buffer sent by DeviceIoControl!
+        // Why the hell MSDN Documentation doesn't mention that?
+        WdfRequestCompleteWithInformation(Request, status, sizeof(TEXT("Response from UMDF Driver!")));
+        break;
+    default:
+        WdfRequestComplete(Request, STATUS_NOT_IMPLEMENTED);
+        break;
+    }
 }
 
 //NTSTATUS

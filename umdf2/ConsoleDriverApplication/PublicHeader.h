@@ -14,7 +14,6 @@
 
 #include <Windows.h>
 #include <SetupAPI.h>
-#include <winioctl.h>
 
 #include "SharedDefs.h"
 

@@ -63,6 +63,9 @@
     <ClInclude Include="IndirectMonitor.h">
       <Filter>Header Files\IndirectDisp</Filter>
     </ClInclude>
+    <ClInclude Include="IddCxCallbacks.h">
+      <Filter>Header Files\IndirectDisp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Driver.cpp">

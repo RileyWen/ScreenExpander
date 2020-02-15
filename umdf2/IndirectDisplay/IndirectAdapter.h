@@ -6,20 +6,19 @@ namespace indirect_disp {
     class IndirectAdapter
     {
     public:
-        IndirectAdapter() {
-            m_pIddCxMonitorInfo = new IDDCX_MONITOR_INFO;
-            ZeroMemory(m_pIddCxMonitorInfo, sizeof(IDDCX_MONITOR_INFO));
-        }
+        IndirectAdapter(WDFDEVICE Device);
 
         // Must be called explictly in the callback function specified
         // in WDF Object Attr since WDF is essentially a C environment!
-        ~IndirectAdapter() {
-            delete m_pIddCxMonitorInfo;
-        }
+        ~IndirectAdapter();
 
-        void IndirectAdapterInit();
+        // Called after the constructor. See the constructor.
         void IndirectAdapterFinishInit();
+        
         bool NewMonitorArrives();
+
+        // In case of failed IddCxAdapterInitAsync
+        bool IsAdapterNull() { return nullptr == m_ThisAdapter; }
 
     protected:
         DWORD m_dwNumOfChildDisplay;
