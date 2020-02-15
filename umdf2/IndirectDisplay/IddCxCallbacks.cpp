@@ -3,17 +3,19 @@
 #include "Driver.h"
 
 using namespace std;
-//using namespace indirect_disp;
 
 _Use_decl_annotations_
 NTSTATUS Evt_IddDeviceD0Entry(WDFDEVICE Device, WDF_POWER_DEVICE_STATE PreviousState)
 {
+    // This function is called by WDF to start the device (or Adapter) in the fully-on power state.
+    UNREFERENCED_PARAMETER(Device);
     UNREFERENCED_PARAMETER(PreviousState);
+    
+    OutputDebugString(TEXT("[IndirDisp] Enter Evt_IddDeviceD0Entry\n"));
 
-    // This function is called by WDF to start the device in the fully-on power state.
 
-    auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
-    pContext->pIndirectDeviceContext->D0Entry_InitMonitor();
+    //auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
+    //pContext->pIndirectMonitor->IndirectAdapterInit();
 
     return STATUS_SUCCESS;
 }
@@ -26,8 +28,8 @@ NTSTATUS Evt_IddDeviceD0Entry(WDFDEVICE Device, WDF_POWER_DEVICE_STATE PreviousS
 _Use_decl_annotations_
 NTSTATUS Evt_IddMonitorAssignSwapChain(IDDCX_MONITOR MonitorObject, const IDARG_IN_SETSWAPCHAIN* pInArgs)
 {
-    auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(MonitorObject);
-    pContext->pIndirectDeviceContext->AssignSwapChain(pInArgs->hSwapChain, pInArgs->RenderAdapterLuid, pInArgs->hNextSurfaceAvailable);
+    auto* pContext = WdfObjectGet_IndirectMonitorContext(MonitorObject);
+    pContext->pIndirectMonitor->AssignSwapChain(pInArgs->hSwapChain, pInArgs->RenderAdapterLuid, pInArgs->hNextSurfaceAvailable);
     return STATUS_SUCCESS;
 }
 
@@ -36,14 +38,16 @@ NTSTATUS Evt_IddMonitorAssignSwapChain(IDDCX_MONITOR MonitorObject, const IDARG_
 _Use_decl_annotations_
 NTSTATUS Evt_IddMonitorUnassignSwapChain(IDDCX_MONITOR MonitorObject)
 {
-    auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(MonitorObject);
-    pContext->pIndirectDeviceContext->UnassignSwapChain();
+    auto* pContext = WdfObjectGet_IndirectMonitorContext(MonitorObject);
+    pContext->pIndirectMonitor->UnassignSwapChain();
     return STATUS_SUCCESS;
 }
 
 _Use_decl_annotations_
 NTSTATUS Evt_IddAdapterInitFinished(IDDCX_ADAPTER AdapterObject, const IDARG_IN_ADAPTER_INIT_FINISHED* pInArgs)
 {
+    OutputDebugString(TEXT("[IndirDisp] Enter IndirectMonitor::IndirectAdapterFinishInit\n"));
+
     UNREFERENCED_PARAMETER(AdapterObject);
     UNREFERENCED_PARAMETER(pInArgs);
     // This is called when the OS has finished setting up the adapter for use by the IddCx driver. It's now possible
@@ -52,7 +56,7 @@ NTSTATUS Evt_IddAdapterInitFinished(IDDCX_ADAPTER AdapterObject, const IDARG_IN_
     //auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(AdapterObject);
     //if (NT_SUCCESS(pInArgs->AdapterInitStatus))
     //{
-    //    pContext->pIndirectDeviceContext->FinishInit();
+    //    pContext->pIndirectMonitor->IndirectAdapterFinishInit();
     //}
 
     return STATUS_SUCCESS;
@@ -103,7 +107,7 @@ NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* 
         {
             pInArgs->pMonitorModes[ModeIndex].Size = sizeof(IDDCX_MONITOR_MODE);
             pInArgs->pMonitorModes[ModeIndex].Origin = IDDCX_MONITOR_MODE_ORIGIN_MONITORDESCRIPTOR;
-            pInArgs->pMonitorModes[ModeIndex].MonitorVideoSignalInfo = indirect_disp::IndirectMonitor::s_KnownMonitorModes[ModeIndex];
+            pInArgs->pMonitorModes[ModeIndex].MonitorVideoSignalInfo = indirect_disp::IndirectAdapter::s_KnownMonitorModes[ModeIndex];
         }
 
         // Set the preferred mode as represented in the EDID

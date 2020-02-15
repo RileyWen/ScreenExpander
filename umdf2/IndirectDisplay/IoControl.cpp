@@ -44,9 +44,9 @@ VOID Evt_IddIoDeviceControl(
 	// TODO: Define some IOCTL which indicate the arrival or 
 	//		 departure of a virtual monitor.
 
-	auto* pContext = WdfObjectGet_IndirectDeviceContextWrapper(Device);
+	auto* pContext = WdfObjectGet_IndirectMonitorContext(Device);
 	UNREFERENCED_PARAMETER(pContext);
-	//pContext->pIndirectDeviceContext->D0Entry_InitMonitor();
+	//pContext->pIndirectMonitor->IndirectAdapterInit();
 
 	status = WdfRequestRetrieveInputBuffer(Request, 0, (PVOID*)&pwUserInputBuf, &inputLength);
 	if (!NT_SUCCESS(status)) {
