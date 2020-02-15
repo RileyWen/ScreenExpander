@@ -37,10 +37,12 @@
   <ItemGroup>
     <ClCompile Include="ErrorOutput.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="NamedPipeTest.cpp" />
     <ClCompile Include="OpenUmdfInterfaceTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ErrorOutput.h" />
+    <ClInclude Include="NamedPipeTest.h" />
     <ClInclude Include="OpenUmdfInterfaceTest.h" />
     <ClInclude Include="PublicHeader.h" />
   </ItemGroup>

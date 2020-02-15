@@ -3,140 +3,140 @@
 #include "OpenUmdfInterfaceTest.h"
 
 bool OpenBusInterface() {
-	HDEVINFO							hardwareDevInfo;
-	SP_DEVICE_INTERFACE_DATA			deviceInterfaceData;
+    HDEVINFO							hardwareDevInfo;
+    SP_DEVICE_INTERFACE_DATA			deviceInterfaceData;
 
-	PSP_DEVICE_INTERFACE_DETAIL_DATA	pDeviceInterfaceDetailData = NULL;
-	ULONG								predictedLen = 0;
-	ULONG								requiredLen = 0;
+    PSP_DEVICE_INTERFACE_DETAIL_DATA	pDeviceInterfaceDetailData = NULL;
+    ULONG								predictedLen = 0;
+    ULONG								requiredLen = 0;
 
-	HANDLE								hDeviceInterface = INVALID_HANDLE_VALUE;
+    HANDLE								hDeviceInterface = INVALID_HANDLE_VALUE;
 
-	bool result = false;
+    bool result = false;
 
-	hardwareDevInfo = SetupDiGetClassDevs(
-		(LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
-		NULL,
-		NULL,
-		(DIGCF_PRESENT | DIGCF_DEVICEINTERFACE)); // Only Devices present & Function class devices
+    hardwareDevInfo = SetupDiGetClassDevs(
+        (LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
+        NULL,
+        NULL,
+        (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE)); // Only Devices present & Function class devices
 
-	if (hardwareDevInfo == INVALID_HANDLE_VALUE) {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		return false;
-	}
+    if (hardwareDevInfo == INVALID_HANDLE_VALUE) {
+        //PrintCSBackupAPIErrorMessage(GetLastError());
+        return false;
+    }
 
-	deviceInterfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+    deviceInterfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 
-	if (!SetupDiEnumDeviceInterfaces(hardwareDevInfo,
-		0, // Can be NULL since the device is uniquely identified by GUID
-		(LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
-		0,
-		&deviceInterfaceData)) {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp0;
-	}
+    if (!SetupDiEnumDeviceInterfaces(hardwareDevInfo,
+        0, // Can be NULL since the device is uniquely identified by GUID
+        (LPGUID)&GUID_DEVINTERFACE_IndirectDisplay,
+        0,
+        &deviceInterfaceData)) {
+        //PrintCSBackupAPIErrorMessage(GetLastError());
+        result = false;
+        goto CleanUp0;
+    }
 
-	std::_tcout << TEXT("Enumerate Interface Data Succeed!\n");
+    std::_tcout << TEXT("Enumerate Interface Data Succeed!\n");
 
-	// Get the required buffer size for our SP_DEVICE_INTERFACE_DATA in which stores the detailed
-	// info about the Indirect Display interface
-	SetupDiGetDeviceInterfaceDetail(
-		hardwareDevInfo,
-		&deviceInterfaceData,
-		NULL,
-		0,
-		&requiredLen,
-		NULL);
-	if (ERROR_INSUFFICIENT_BUFFER != GetLastError()) {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp0;
-	}
-	predictedLen = requiredLen;
+    // Get the required buffer size for our SP_DEVICE_INTERFACE_DATA in which stores the detailed
+    // info about the Indirect Display interface
+    SetupDiGetDeviceInterfaceDetail(
+        hardwareDevInfo,
+        &deviceInterfaceData,
+        NULL,
+        0,
+        &requiredLen,
+        NULL);
+    if (ERROR_INSUFFICIENT_BUFFER != GetLastError()) {
+        //PrintCSBackupAPIErrorMessage(GetLastError());
+        result = false;
+        goto CleanUp0;
+    }
+    predictedLen = requiredLen;
 
-	std::_tcout << TEXT("Probe Interface Data Buffer Length Succeed!\n");
+    std::_tcout << TEXT("Probe Interface Data Buffer Length Succeed!\n");
 
-	// Allocate a buffer after getting the required size.
-	pDeviceInterfaceDetailData =
-		(PSP_DEVICE_INTERFACE_DETAIL_DATA)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, predictedLen);
-	if (pDeviceInterfaceDetailData)
-		pDeviceInterfaceDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-	else {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp0;
-	}
+    // Allocate a buffer after getting the required size.
+    pDeviceInterfaceDetailData =
+        (PSP_DEVICE_INTERFACE_DETAIL_DATA)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, predictedLen);
+    if (pDeviceInterfaceDetailData)
+        pDeviceInterfaceDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+    else {
+        //PrintCSBackupAPIErrorMessage(GetLastError());
+        result = false;
+        goto CleanUp0;
+    }
 
-	std::_tcout << TEXT("Allocate Interface Data Buffer Length Succeed!\n");
+    std::_tcout << TEXT("Allocate Interface Data Buffer Length Succeed!\n");
 
-	// Get the actual data for the Indirect Display interface
-	if (!SetupDiGetDeviceInterfaceDetail(
-		hardwareDevInfo,
-		&deviceInterfaceData,
-		pDeviceInterfaceDetailData,
-		predictedLen,
-		&requiredLen,
-		NULL)) {
-		//PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp1;
-	}
+    // Get the actual data for the Indirect Display interface
+    if (!SetupDiGetDeviceInterfaceDetail(
+        hardwareDevInfo,
+        &deviceInterfaceData,
+        pDeviceInterfaceDetailData,
+        predictedLen,
+        &requiredLen,
+        NULL)) {
+        //PrintCSBackupAPIErrorMessage(GetLastError());
+        result = false;
+        goto CleanUp1;
+    }
 
 
-	std::_tcout << TEXT("Query Interface Data Succeed! Path: ")
-		<< pDeviceInterfaceDetailData->DevicePath
-		<< std::endl;
+    std::_tcout << TEXT("Query Interface Data Succeed! Path: ")
+        << pDeviceInterfaceDetailData->DevicePath
+        << std::endl;
 
-	hDeviceInterface = CreateFile(
-		pDeviceInterfaceDetailData->DevicePath,
-		GENERIC_READ | GENERIC_WRITE, // Important!!! Don't forget it!
-		FILE_SHARE_READ | FILE_SHARE_WRITE,
-		NULL,
-		OPEN_EXISTING,
-		0,
-		NULL);
-	if (hDeviceInterface == INVALID_HANDLE_VALUE) {
-		PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp1;
-	}
+    hDeviceInterface = CreateFile(
+        pDeviceInterfaceDetailData->DevicePath,
+        GENERIC_READ | GENERIC_WRITE, // Important!!! Don't forget it!
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        OPEN_EXISTING,
+        0,
+        NULL);
+    if (hDeviceInterface == INVALID_HANDLE_VALUE) {
+        PrintCSBackupAPIErrorMessage(GetLastError());
+        result = false;
+        goto CleanUp1;
+    }
 
-	std::wcout << L"Create Handle to Interface Data Succeed!\n";
+    std::wcout << L"Create Handle to Interface Data Succeed!\n";
 
 #define INDIRECT_DISP_IOCTL(_index_) \
-	CTL_CODE (FILE_DEVICE_BUS_EXTENDER, _index_, METHOD_BUFFERED, \
-			  FILE_ANY_ACCESS | FILE_READ_DATA | FILE_WRITE_DATA)
+    CTL_CODE (FILE_DEVICE_BUS_EXTENDER, _index_, METHOD_BUFFERED, \
+              FILE_ANY_ACCESS | FILE_READ_DATA | FILE_WRITE_DATA)
 
 #define IOCTL_SND_MSG INDIRECT_DISP_IOCTL(0x0)
 
-	WCHAR pwInputBuffer[] = L"Hello from User Mode App!\n";
+    WCHAR pwInputBuffer[] = L"Hello from User Mode App!\n";
 
-	WCHAR pwOutputBuffer[256];
-	DWORD bytesReturned = 0;
+    WCHAR pwOutputBuffer[256];
+    DWORD bytesReturned = 0;
 
-	if (!DeviceIoControl(
-		hDeviceInterface,
-		IOCTL_SND_MSG,
-		pwInputBuffer, sizeof(pwInputBuffer),
-		pwOutputBuffer, sizeof(pwOutputBuffer),
-		&bytesReturned, NULL)) {
-		PrintCSBackupAPIErrorMessage(GetLastError());
-		result = false;
-		goto CleanUp2;
-	}
+    if (!DeviceIoControl(
+        hDeviceInterface,
+        IOCTL_SND_MSG,
+        pwInputBuffer, sizeof(pwInputBuffer),
+        pwOutputBuffer, sizeof(pwOutputBuffer),
+        &bytesReturned, NULL)) {
+        PrintCSBackupAPIErrorMessage(GetLastError());
+        result = false;
+        goto CleanUp2;
+    }
 
-	std::_tcout << "Message returned from driver:" << pwOutputBuffer << std::endl;
+    std::_tcout << "Message returned from driver:" << pwOutputBuffer << std::endl;
 
-	result = true;
+    result = true;
 
 CleanUp2:
-	CloseHandle(hDeviceInterface);
+    CloseHandle(hDeviceInterface);
 
 CleanUp1:
-	HeapFree(GetProcessHeap(), 0, pDeviceInterfaceDetailData);
+    HeapFree(GetProcessHeap(), 0, pDeviceInterfaceDetailData);
 
 CleanUp0:
-	SetupDiDestroyDeviceInfoList(hardwareDevInfo);
-	return result;
+    SetupDiDestroyDeviceInfoList(hardwareDevInfo);
+    return result;
 }
