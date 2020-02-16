@@ -1,22 +1,45 @@
 #pragma once
 
+// Suppress the redefinition of NTSTATUS
+#include <ntstatus.h>
+#define WIN32_NO_STATUS
+
+#ifndef UMDF_MINIMUM_VERSION_REQUIRED
+#define UMDF_MINIMUM_VERSION_REQUIRED 25
+#endif
+
+#ifndef UMDF_VERSION_MINOR
+#define UMDF_VERSION_MINOR 25
+#endif
+
+
+// Important! The minimum Windows versions required for
+// each IddCx Version are listed below. Note that This
+// Driver is built on IddCx version 1.3.x
+//
+//    Windows Version    | IddCx Version
+// ----------------------|---------------
+// 1709 Redstone 3 16299 |    1.2.0
+// 1803 Redstone 4 17134 |    1.3.0
+// 1809 Redstone 5 17763 |    1.3.8
+// 1903    19H1    18362 |    1.4.0
+//
+#ifndef IDDCX_VERSION_MAJOR
+#define IDDCX_VERSION_MAJOR 1
+#endif
+
+#ifndef IDDCX_VERSION_MINOR
+#define IDDCX_VERSION_MINOR 3
+#endif
+
+
 #include <unknwn.h>
 #include <winrt/base.h>
 
 #include <Windows.h>
 
 #include <wdf.h>
-
-
-#ifndef IDDCX_VERSION_MAJOR
-#define IDDCX_VERSION_MAJOR 1
-#endif
-
-#ifndef IDDCX_VERSION_MINOR
-#define IDDCX_VERSION_MINOR 2
-#endif
-
-#include <iddcx/1.2/IddCx.h>
+#include <iddcx/1.4/IddCx.h>
 
 #include <cstdio>
 #include <strsafe.h>

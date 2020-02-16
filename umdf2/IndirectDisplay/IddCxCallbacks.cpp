@@ -118,6 +118,12 @@ NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* 
     }
 }
 
+NTSTATUS Evt_IddCxMonitorGetPhysicalSize( _In_ IDDCX_MONITOR MonitorObject, _Out_ IDARG_OUT_MONITORGETPHYSICALSIZE* pOutArgs)
+{
+
+    return STATUS_SUCCESS;
+}
+
 /// <summary>
 /// Creates a target mode from the fundamental mode attributes.
 /// </summary>
