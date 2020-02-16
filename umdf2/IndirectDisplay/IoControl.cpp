@@ -32,8 +32,19 @@ VOID Evt_IddIoDeviceControl(
     UNREFERENCED_PARAMETER(InputBufferLength);
     //UNREFERENCED_PARAMETER(IoControlCode);
 
-    NTSTATUS status;
+#pragma region Viriables for IOCTL_MONITOR_ARRIVE
+    DWORD dwNewMonitorIndex;
+    bool bMonitorCreateSuccess;
+
+    MONITOR_ARRIVE_ARG_OUT MonitorArriveArgOut;
+#pragma endregion
+
+
+#pragma region Variables for IOCTL_ADAPTER_ECHO
     TCHAR DebugBuffer[256];
+#pragma endregion
+
+    NTSTATUS status;
 
     LPWSTR pwUserInputBuf = NULL;
     size_t inputLength = 0;
@@ -45,13 +56,41 @@ VOID Evt_IddIoDeviceControl(
     auto* pIndirectAdapter = pContext->pIndirectAdapter;
 
     // Since adapter is null, we cannot attach new monitors to it.
-    if (pIndirectAdapter->IsAdapterNull())
-        WdfRequestComplete(Request, STATUS_OPEN_FAILED);
+    if (pIndirectAdapter->IsAdapterNull()) {
+        OutputDebugString(TEXT("[IndirDisp] pIndirectAdapter->m_ThisAdapter is null! Ignoring this I/O request.\n"));
+        WdfRequestComplete(Request, STATUS_IO_DEVICE_ERROR);
+        return;
+    }
 
     switch (IoControlCode)
     {
-    case IOCTL_NEW_MONITOR:
+    case IOCTL_MONITOR_ARRIVE:
+        bMonitorCreateSuccess = pIndirectAdapter->NewMonitorArrives(dwNewMonitorIndex);
+        if (!bMonitorCreateSuccess) {
+            OutputDebugString(TEXT("[IndirDisp] pIndirectAdapter->NewMonitorArrives Failed!\n"));
+            WdfRequestComplete(Request, STATUS_IO_DEVICE_ERROR);
+            return;
+        }
 
+        MonitorArriveArgOut.dwMonitorIndex = dwNewMonitorIndex;
+
+        status = WdfRequestRetrieveOutputBuffer(Request, sizeof(MONITOR_ARRIVE_ARG_OUT), (PVOID*)&pwUserOutputBuf, &outputLength);
+        if (!NT_SUCCESS(status)) {
+            OutputDebugString(TEXT("[IndirDisp] WdfRequestRetrieveOutputBuffer Failed!\n"));
+            WdfRequestComplete(Request, status);
+            return;
+        }
+
+        CopyMemory(pwUserOutputBuf, &MonitorArriveArgOut, sizeof(MONITOR_ARRIVE_ARG_OUT));
+
+        WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, sizeof(MONITOR_ARRIVE_ARG_OUT));
+        break;
+
+    case IOCTL_MONITOR_DEPART:
+        WdfRequestComplete(Request, STATUS_NOT_IMPLEMENTED);
+        break;
+
+    case IOCTL_ADAPTER_ECHO:
         status = WdfRequestRetrieveInputBuffer(Request, 0, (PVOID*)&pwUserInputBuf, &inputLength);
         if (!NT_SUCCESS(status)) {
             OutputDebugString(TEXT("[IndirDisp] InWdfRequestRetrieveInputBuffer Failed!\n"));
@@ -83,11 +122,14 @@ VOID Evt_IddIoDeviceControl(
         // and nothing will be returned to the buffer sent by DeviceIoControl!
         // Why the hell MSDN Documentation doesn't mention that?
         WdfRequestCompleteWithInformation(Request, status, sizeof(TEXT("Response from UMDF Driver!")));
+
         break;
+
     default:
         WdfRequestComplete(Request, STATUS_NOT_IMPLEMENTED);
         break;
     }
+
 }
 
 //NTSTATUS

@@ -4,7 +4,7 @@
 namespace indirect_disp {
 
 #pragma region IndirectMonitor
-    IndirectMonitor::IndirectMonitor(IDDCX_MONITOR IddCxMonitor) : m_ThisMonitor(IddCxMonitor)
+    IndirectMonitor::IndirectMonitor(_In_ IDDCX_MONITOR IddCxMonitor) : m_ThisMonitor(IddCxMonitor)
     {
     }
 

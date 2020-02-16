@@ -15,7 +15,7 @@ namespace indirect_disp {
         // Called after the constructor. See the constructor.
         void IndirectAdapterFinishInit();
         
-        bool NewMonitorArrives();
+        bool NewMonitorArrives(_Out_ DWORD& NewMonitorIndex);
 
         // In case of failed IddCxAdapterInitAsync
         bool IsAdapterNull() { return nullptr == m_ThisAdapter; }
@@ -25,7 +25,7 @@ namespace indirect_disp {
 
         // Why is a 'class' needed in front of a class type in MSVC????
         // FuckMSVC.jpg
-        class IndirectMonitor* m_pChildMonitors[8];
+        struct IndirectMonitor* m_pChildMonitors[8];
 
         WDFDEVICE m_WdfDevice;
         IDDCX_ADAPTER m_ThisAdapter;

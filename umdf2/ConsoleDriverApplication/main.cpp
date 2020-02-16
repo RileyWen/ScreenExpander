@@ -13,11 +13,17 @@ int main() {
     while (true) {
         _tcin >> cmd;
 
-        if (cmd == T("o")) {
-            if (OpenBusInterface())
+        if (cmd == T("e")) {
+            if (AdapterEchoTest())
                 INFO("Call IOCTL Succeeded!\n");
             else
                 INFO("Call IOCTL Failed!\n");
+        }
+        else if (cmd == T("n")) {
+            if (NewMonitorTest())
+                INFO("NewMonitorTest Succeeded!\n");
+            else
+                INFO("NewMonitorTest Failed!\n");
         }
         else if (cmd == T("p")) {
             PipeTest1_ConnectAfterCreated_RecvByPacket();

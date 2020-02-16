@@ -2,4 +2,6 @@
 
 #include "PublicHeader.h"
 
-bool OpenBusInterface();
+bool AdapterEchoTest();
+
+bool NewMonitorTest();

@@ -2,7 +2,85 @@
 #include "ErrorOutput.h"
 #include "OpenUmdfInterfaceTest.h"
 
-bool OpenBusInterface() {
+HANDLE OpenDeviceInterface(DWORD dwDesiredAccess);
+
+HANDLE OpenDeviceInterfaceRW() {
+    return OpenDeviceInterface(GENERIC_READ | GENERIC_WRITE);
+}
+
+HANDLE OpenDeviceInterfaceRO() {
+    return OpenDeviceInterface(GENERIC_READ);
+}
+
+bool AdapterEchoTest() {
+    bool result = false;
+
+    WCHAR pwInputBuffer[] = L"Hello from User Mode App!\n";
+
+    WCHAR pwOutputBuffer[256];
+    DWORD bytesReturned = 0;
+
+    HANDLE hDeviceInterface;
+
+    hDeviceInterface = OpenDeviceInterfaceRW();
+    if (hDeviceInterface == INVALID_HANDLE_VALUE)
+        return false;
+
+    if (!DeviceIoControl(
+        hDeviceInterface,
+        IOCTL_ADAPTER_ECHO,
+        pwInputBuffer, sizeof(pwInputBuffer),
+        pwOutputBuffer, sizeof(pwOutputBuffer),
+        &bytesReturned, NULL)) {
+        PrintCSBackupAPIErrorMessage(GetLastError());
+        result = false;
+        goto CleanUp0;
+    }
+
+    std::_tcout << "Message returned from driver:" << pwOutputBuffer << std::endl;
+
+    result = true;
+
+CleanUp0:
+    CloseHandle(hDeviceInterface);
+
+    return result;
+}
+
+bool NewMonitorTest()
+{
+    bool result = false;
+    HANDLE hDeviceInterface;
+
+    MONITOR_ARRIVE_ARG_OUT MonitorArriveArgOut;
+    DWORD bytesReturned = 0;
+
+    hDeviceInterface = OpenDeviceInterfaceRO();
+    if (hDeviceInterface == INVALID_HANDLE_VALUE)
+        return false;
+
+    if (!DeviceIoControl(
+        hDeviceInterface,
+        IOCTL_MONITOR_ARRIVE,
+        NULL, 0,
+        &MonitorArriveArgOut, sizeof(MONITOR_ARRIVE_ARG_OUT),
+        &bytesReturned, NULL)) {
+        PrintCSBackupAPIErrorMessage(GetLastError());
+        result = false;
+        goto CleanUp0;
+    }
+
+    result = true;
+
+    std::_tcout << "New Monitor Index: " << MonitorArriveArgOut.dwMonitorIndex << std::endl;
+
+CleanUp0:
+    CloseHandle(hDeviceInterface);
+
+    return result;
+}
+
+HANDLE OpenDeviceInterface(DWORD dwDesiredAccess) {
     HDEVINFO							hardwareDevInfo;
     SP_DEVICE_INTERFACE_DATA			deviceInterfaceData;
 
@@ -12,8 +90,6 @@ bool OpenBusInterface() {
 
     HANDLE								hDeviceInterface = INVALID_HANDLE_VALUE;
 
-    bool result = false;
-
     hardwareDevInfo = SetupDiGetClassDevs(
         (LPGUID)&GUID_DEVINTERFACE_INDIRECT_DEVICE,
         NULL,
@@ -21,8 +97,8 @@ bool OpenBusInterface() {
         (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE)); // Only Devices present & Function class devices
 
     if (hardwareDevInfo == INVALID_HANDLE_VALUE) {
-        //PrintCSBackupAPIErrorMessage(GetLastError());
-        return false;
+        PrintCSBackupAPIErrorMessage(GetLastError());
+        return hDeviceInterface;
     }
 
     deviceInterfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
@@ -32,12 +108,11 @@ bool OpenBusInterface() {
         (LPGUID)&GUID_DEVINTERFACE_INDIRECT_DEVICE,
         0,
         &deviceInterfaceData)) {
-        //PrintCSBackupAPIErrorMessage(GetLastError());
-        result = false;
+        PrintCSBackupAPIErrorMessage(GetLastError());
         goto CleanUp0;
     }
 
-    std::_tcout << TEXT("Enumerate Interface Data Succeed!\n");
+    INFO("Enumerate Interface Data Succeed!\n");
 
     // Get the required buffer size for our SP_DEVICE_INTERFACE_DATA in which stores the detailed
     // info about the Indirect Display interface
@@ -49,13 +124,12 @@ bool OpenBusInterface() {
         &requiredLen,
         NULL);
     if (ERROR_INSUFFICIENT_BUFFER != GetLastError()) {
-        //PrintCSBackupAPIErrorMessage(GetLastError());
-        result = false;
+        PrintCSBackupAPIErrorMessage(GetLastError());
         goto CleanUp0;
     }
     predictedLen = requiredLen;
 
-    std::_tcout << TEXT("Probe Interface Data Buffer Length Succeed!\n");
+    INFO("Probe Interface Data Buffer Length Succeed!\n");
 
     // Allocate a buffer after getting the required size.
     pDeviceInterfaceDetailData =
@@ -63,12 +137,11 @@ bool OpenBusInterface() {
     if (pDeviceInterfaceDetailData)
         pDeviceInterfaceDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
     else {
-        //PrintCSBackupAPIErrorMessage(GetLastError());
-        result = false;
+        PrintCSBackupAPIErrorMessage(GetLastError());
         goto CleanUp0;
     }
 
-    std::_tcout << TEXT("Allocate Interface Data Buffer Length Succeed!\n");
+    INFO("Allocate Interface Data Buffer Length Succeed!\n");
 
     // Get the actual data for the Indirect Display interface
     if (!SetupDiGetDeviceInterfaceDetail(
@@ -78,8 +151,7 @@ bool OpenBusInterface() {
         predictedLen,
         &requiredLen,
         NULL)) {
-        //PrintCSBackupAPIErrorMessage(GetLastError());
-        result = false;
+        PrintCSBackupAPIErrorMessage(GetLastError());
         goto CleanUp1;
     }
 
@@ -90,7 +162,7 @@ bool OpenBusInterface() {
 
     hDeviceInterface = CreateFile(
         pDeviceInterfaceDetailData->DevicePath,
-        GENERIC_READ | GENERIC_WRITE, // Important!!! Don't forget it!
+        dwDesiredAccess, // Important!!! Don't forget it!
         FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL,
         OPEN_EXISTING,
@@ -98,39 +170,18 @@ bool OpenBusInterface() {
         NULL);
     if (hDeviceInterface == INVALID_HANDLE_VALUE) {
         PrintCSBackupAPIErrorMessage(GetLastError());
-        result = false;
         goto CleanUp1;
     }
 
-    std::wcout << L"Create Handle to Interface Data Succeed!\n";
+    INFO("Create Handle to Interface Data Succeed!\n");
 
-    WCHAR pwInputBuffer[] = L"Hello from User Mode App!\n";
-
-    WCHAR pwOutputBuffer[256];
-    DWORD bytesReturned = 0;
-
-    if (!DeviceIoControl(
-        hDeviceInterface,
-        IOCTL_NEW_MONITOR,
-        pwInputBuffer, sizeof(pwInputBuffer),
-        pwOutputBuffer, sizeof(pwOutputBuffer),
-        &bytesReturned, NULL)) {
-        PrintCSBackupAPIErrorMessage(GetLastError());
-        result = false;
-        goto CleanUp2;
-    }
-
-    std::_tcout << "Message returned from driver:" << pwOutputBuffer << std::endl;
-
-    result = true;
-
-CleanUp2:
-    CloseHandle(hDeviceInterface);
+    return hDeviceInterface;
 
 CleanUp1:
     HeapFree(GetProcessHeap(), 0, pDeviceInterfaceDetailData);
 
 CleanUp0:
     SetupDiDestroyDeviceInfoList(hardwareDevInfo);
-    return result;
+    return INVALID_HANDLE_VALUE;
 }
+
