@@ -64,6 +64,15 @@
 #include "SharedDefs.h"
 
 // If defined, new monitors will be reported without EDID.
-#define MONITOR_NO_EDID
+//#define MONITOR_NO_EDID
+
+extern TCHAR __DEBUG_BUFFER[128];
+#define PrintfDebugString(_Fmt_, ...)                       \
+do                                                          \
+{                                                           \
+    StringCbPrintf(__DEBUG_BUFFER, sizeof(__DEBUG_BUFFER),  \
+        TEXT("[IndirDisp] ") TEXT(_Fmt_), __VA_ARGS__);     \
+    OutputDebugString(__DEBUG_BUFFER);                      \
+} while (0)
 
 #pragma hdrstop

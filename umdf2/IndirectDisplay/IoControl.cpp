@@ -39,11 +39,6 @@ VOID Evt_IddIoDeviceControl(
     MONITOR_ARRIVE_ARG_OUT MonitorArriveArgOut;
 #pragma endregion
 
-
-#pragma region Variables for IOCTL_ADAPTER_ECHO
-    TCHAR DebugBuffer[256];
-#pragma endregion
-
     NTSTATUS status;
 
     LPWSTR pwUserInputBuf = NULL;
@@ -57,7 +52,7 @@ VOID Evt_IddIoDeviceControl(
 
     // Since adapter is null, we cannot attach new monitors to it.
     if (pIndirectAdapter->IsAdapterNull()) {
-        OutputDebugString(TEXT("[IndirDisp] pIndirectAdapter->m_ThisAdapter is null! Ignoring this I/O request.\n"));
+        PrintfDebugString("pIndirectAdapter->m_ThisAdapter is null! Ignoring this I/O request.\n");
         WdfRequestComplete(Request, STATUS_IO_DEVICE_ERROR);
         return;
     }
@@ -65,9 +60,11 @@ VOID Evt_IddIoDeviceControl(
     switch (IoControlCode)
     {
     case IOCTL_MONITOR_ARRIVE:
+        PrintfDebugString("Trying to add a new monitor...\n");
+
         bMonitorCreateSuccess = pIndirectAdapter->NewMonitorArrives(dwNewMonitorIndex);
         if (!bMonitorCreateSuccess) {
-            OutputDebugString(TEXT("[IndirDisp] pIndirectAdapter->NewMonitorArrives Failed!\n"));
+            PrintfDebugString("pIndirectAdapter->NewMonitorArrives Failed!\n");
             WdfRequestComplete(Request, STATUS_IO_DEVICE_ERROR);
             return;
         }
@@ -76,7 +73,7 @@ VOID Evt_IddIoDeviceControl(
 
         status = WdfRequestRetrieveOutputBuffer(Request, sizeof(MONITOR_ARRIVE_ARG_OUT), (PVOID*)&pwUserOutputBuf, &outputLength);
         if (!NT_SUCCESS(status)) {
-            OutputDebugString(TEXT("[IndirDisp] WdfRequestRetrieveOutputBuffer Failed!\n"));
+            PrintfDebugString("WdfRequestRetrieveOutputBuffer Failed!\n");
             WdfRequestComplete(Request, status);
             return;
         }
@@ -93,29 +90,23 @@ VOID Evt_IddIoDeviceControl(
     case IOCTL_ADAPTER_ECHO:
         status = WdfRequestRetrieveInputBuffer(Request, 0, (PVOID*)&pwUserInputBuf, &inputLength);
         if (!NT_SUCCESS(status)) {
-            OutputDebugString(TEXT("[IndirDisp] InWdfRequestRetrieveInputBuffer Failed!\n"));
+            PrintfDebugString("InWdfRequestRetrieveInputBuffer Failed!\n");
             WdfRequestComplete(Request, status);
         }
 
         status = WdfRequestRetrieveOutputBuffer(Request, 256, (PVOID*)&pwUserOutputBuf, &outputLength);
         if (!NT_SUCCESS(status)) {
-            OutputDebugString(TEXT("[IndirDisp] WdfRequestRetrieveOutputBuffer Failed!\n"));
+            PrintfDebugString("WdfRequestRetrieveOutputBuffer Failed!\n");
             WdfRequestComplete(Request, status);
         }
 
-        StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
-            TEXT("[IndirDisp] IO Request: OutputBuf = 0x%p, OutputBufLength = %zu\n"),
-            pwUserOutputBuf, outputLength);
+        PrintfDebugString("IO Request: OutputBuf = 0x%p, OutputBufLength = %zu\n", pwUserOutputBuf, outputLength);
 
-        OutputDebugString(DebugBuffer);
 
         StringCbPrintf(pwUserOutputBuf, outputLength, TEXT("Response from UMDF Driver!"));
 
-        StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
-            TEXT("[IndirDisp] Now pwUserOutputBuf: %ws\n"),
-            pwUserOutputBuf);
+        PrintfDebugString("Now pwUserOutputBuf: %ws\n", pwUserOutputBuf);
 
-        OutputDebugString(DebugBuffer);
 
         // Must use WdfRequestCompleteWithInformation to set the 'ByteReturn' field!!
         // If you just use WdfRequestComplete, OS thinks you're returning 0 bytes

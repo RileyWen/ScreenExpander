@@ -26,8 +26,13 @@ namespace indirect_disp {
         AdapterCaps.Size = sizeof(AdapterCaps);
 
         // Declare basic feature support for the adapter (required)
-        AdapterCaps.MaxMonitorsSupported = 1;
+        AdapterCaps.MaxMonitorsSupported = 8;
         AdapterCaps.EndPointDiagnostics.Size = sizeof(AdapterCaps.EndPointDiagnostics);
+
+        // Seems useless
+        AdapterCaps.MaxDisplayPipelineRate = 1920ULL * 1080ULL * 60ULL *
+            24ULL * 8ULL;
+
         AdapterCaps.EndPointDiagnostics.GammaSupport = IDDCX_FEATURE_IMPLEMENTATION_NONE;
         AdapterCaps.EndPointDiagnostics.TransmissionType = IDDCX_TRANSMISSION_TYPE_WIRED_OTHER;
 
@@ -67,15 +72,10 @@ namespace indirect_disp {
             auto* pContext = WdfObjectGet_IndirectAdapterContext(m_ThisAdapter);
             pContext->pIndirectAdapter = this;
 
-            OutputDebugString(TEXT("[IndirDisp] IddCxAdapterInitAsync succeeded!\n"));
+            PrintfDebugString("IddCxAdapterInitAsync succeeded!\n");
         }
         else {
-            TCHAR DebugBuffer[128];
-
-            StringCbPrintf(DebugBuffer, sizeof(DebugBuffer),
-                TEXT("[IndirDisp] IddCxAdapterInitAsync failed: 0x%x\n"),
-                Status);
-            OutputDebugString(DebugBuffer);
+            PrintfDebugString("IddCxAdapterInitAsync failed: 0x%x\n", Status);
         }
     }
 
@@ -117,12 +117,12 @@ namespace indirect_disp {
         // =================================================================================================================
 
         m_pIddCxMonitorInfo->Size = sizeof(IDDCX_MONITOR_INFO);
-        m_pIddCxMonitorInfo->MonitorType = DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_VIRTUAL;
+        m_pIddCxMonitorInfo->MonitorType = DISPLAYCONFIG_OUTPUT_TECHNOLOGY_HDMI;
 
         // This is a zero based unique identifier for this connector, it should be unique for this adapter and the value should
         // not change for this connector across system reboot or driver upgrade.
-        // The value has to be between 0 and (IDDCX_ADAPTER_CAPS.MaxMonitorsSupported-1)
-        m_pIddCxMonitorInfo->ConnectorIndex = 0;
+        // The value has to be between **0** and **(IDDCX_ADAPTER_CAPS.MaxMonitorsSupported-1)**
+        m_pIddCxMonitorInfo->ConnectorIndex = 0x0;
 
         m_pIddCxMonitorInfo->MonitorDescription.Size = sizeof(IDDCX_MONITOR_INFO::MonitorDescription);
         m_pIddCxMonitorInfo->MonitorDescription.Type = IDDCX_MONITOR_DESCRIPTION_TYPE_EDID;
@@ -135,7 +135,7 @@ namespace indirect_disp {
         m_pIddCxMonitorInfo->MonitorDescription.pData = const_cast<BYTE*>(s_KnownMonitorEdid);
 #else
         m_pIddCxMonitorInfo->MonitorDescription.DataSize = 0;
-        m_pIddCxMonitorInfo->MonitorDescription.pData = NULL;
+        m_pIddCxMonitorInfo->MonitorDescription.pData = nullptr;
 #endif
 
         // =========================== Comment of Original Forked Code =====================================================
@@ -150,11 +150,11 @@ namespace indirect_disp {
         CoCreateGuid(&m_pIddCxMonitorInfo->MonitorContainerId);
     }
 
-    bool IndirectAdapter::NewMonitorArrives(_Out_ DWORD& NewMonitorIndex) {
-        NewMonitorIndex = 0xFFFFFFFF;
+    bool IndirectAdapter::NewMonitorArrives(_Out_ DWORD& dwFuncArgOutNewMonitorIndex) {
+        dwFuncArgOutNewMonitorIndex = 0xFFFFFFFF;
 
         WDF_OBJECT_ATTRIBUTES Attr;
-        IDARG_IN_MONITORCREATE MonitorCreate = {};
+        IDARG_IN_MONITORCREATE ArgInMonitorCreate = {};
 
         if (m_dwNumOfChildDisplay > 8)
             return false;
@@ -165,35 +165,52 @@ namespace indirect_disp {
             // Automatically cleanup the context when the WDF object is about to be deleted
             auto* pContext = WdfObjectGet_IndirectMonitorContext(Object);
             if (pContext)
-            {
                 pContext->Cleanup();
-            }
         };
 
-        MonitorCreate.ObjectAttributes = &Attr;
-        MonitorCreate.pMonitorInfo = m_pIddCxMonitorInfo;
+        ArgInMonitorCreate.ObjectAttributes = &Attr;
+        ArgInMonitorCreate.pMonitorInfo = m_pIddCxMonitorInfo;
 
         // Create a monitor object with the specified monitor descriptor
-        IDARG_OUT_MONITORCREATE MonitorCreateOut;
-        NTSTATUS Status = IddCxMonitorCreate(m_ThisAdapter, &MonitorCreate, &MonitorCreateOut);
-        if (NT_SUCCESS(Status))
-        {
-            int index;
-            for (index = 0; index < 8; index++)
-                if (m_pChildMonitors[index] == NULL)
-                    break;
-            
-            NewMonitorIndex = index;
-            m_pChildMonitors[index] = new IndirectMonitor(MonitorCreateOut.MonitorObject);
-
-            // Associate the monitor with this device context
-            auto* pContext = WdfObjectGet_IndirectMonitorContext(MonitorCreateOut.MonitorObject);
-            pContext->pIndirectMonitor = m_pChildMonitors[index];
-
-            // Tell the OS that the monitor has been plugged in
-            IDARG_OUT_MONITORARRIVAL ArrivalOut;
-            Status = IddCxMonitorArrival(m_pChildMonitors[index]->m_ThisMonitor, &ArrivalOut);
+        IDARG_OUT_MONITORCREATE ArgOutMonitorCreate = {};
+        NTSTATUS Status = IddCxMonitorCreate(m_ThisAdapter, &ArgInMonitorCreate, &ArgOutMonitorCreate);
+        if (!NT_SUCCESS(Status)) {
+            PrintfDebugString("IddCxMonitorCreate Failed: 0x%x\n", Status);
+            return false;
         }
+
+        int index;
+        for (index = 0; index < 8; index++)
+            if (m_pChildMonitors[index] == nullptr)
+                break;
+
+        dwFuncArgOutNewMonitorIndex = index;
+
+        // Store the IDDCX_MONITOR in corresponding indirect_disp::IndirectMonitor class
+        m_pChildMonitors[index] = new IndirectMonitor(ArgOutMonitorCreate.MonitorObject);
+
+        // Associate the monitor with this device context
+        auto* pContext = WdfObjectGet_IndirectMonitorContext(ArgOutMonitorCreate.MonitorObject);
+
+        // Store the pointer to indirect_disp::IndirectMonitor class in its IDDCX_MONITOR
+        // Object context.
+        pContext->pIndirectMonitor = m_pChildMonitors[index];
+
+        m_pChildMonitors[index]->m_ThisMonitor = ArgOutMonitorCreate.MonitorObject;
+
+        // Tell the OS that the monitor has been plugged in
+        IDARG_OUT_MONITORARRIVAL ArrivalOut;
+        //Status = IddCxMonitorArrival(m_pChildMonitors[index]->m_ThisMonitor, &ArrivalOut);
+        Status = IddCxMonitorArrival(ArgOutMonitorCreate.MonitorObject, &ArrivalOut);
+        if (!NT_SUCCESS(Status)) {
+            PrintfDebugString("IddCxMonitorArrival Failed: 0x%x\n", Status);
+
+            delete m_pChildMonitors[index];
+            m_pChildMonitors[index] = nullptr;
+
+            return false;
+        }
+
         return true;
     }
 
@@ -203,6 +220,16 @@ namespace indirect_disp {
     // A list of modes exposed by the sample monitor EDID - FOR SAMPLE PURPOSES ONLY
     const DISPLAYCONFIG_VIDEO_SIGNAL_INFO IndirectAdapter::s_KnownMonitorModes[] =
     {
+        // 1920 x 1080 @ 60Hz
+        {
+              148500 * KHZ,
+            { 148500 * KHZ, 1920 + 280},
+            { 148500 * KHZ, (1920 + 280) * (1080 + 45)},
+            { 1920, 1080},
+            { 1920 + 280, 1080 + 45},
+            { {255, 0} },
+            DISPLAYCONFIG_SCANLINE_ORDERING_PROGRESSIVE
+        },
         // 800 x 600 @ 60Hz
         {
               40 * MHZ,                                      // pixel clock rate [Hz]
