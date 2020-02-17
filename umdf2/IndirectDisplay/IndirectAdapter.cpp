@@ -15,12 +15,12 @@ namespace indirect_disp {
 
         ZeroMemory(m_pChildMonitors, 8 * sizeof(struct IndirectMonitor*));
 
-        // ==============================
+        // =========================== Comment of Original Forked Code =====================================================
         // TODO: Update the below diagnostic information in accordance with the target hardware. The strings and version
         // numbers are used for telemetry and may be displayed to the user in some situations.
         //
         // This is also where static per-adapter capabilities are determined.
-        // ==============================
+        // =================================================================================================================
 
         IDDCX_ADAPTER_CAPS AdapterCaps = {};
         AdapterCaps.Size = sizeof(AdapterCaps);
@@ -33,7 +33,7 @@ namespace indirect_disp {
 
         // Declare your device strings for telemetry (required)
         AdapterCaps.EndPointDiagnostics.pEndPointFriendlyName = L"Idd Device";
-        AdapterCaps.EndPointDiagnostics.pEndPointManufacturerName = L"Microsoft";
+        AdapterCaps.EndPointDiagnostics.pEndPointManufacturerName = L"RileyW";
         AdapterCaps.EndPointDiagnostics.pEndPointModelName = L"Idd Model";
 
         // Declare your hardware and firmware versions (required)
@@ -95,7 +95,7 @@ namespace indirect_disp {
         0x20,0x20,0x00,0x00,0x00,0xFC,0x00,0x52,0x69,0x6C,0x65,0x79,0x49,0x6E,0x64,0x69,0x72,0x65,0x63,0x74,0x00,0x00,
         0x00,0xFF,0x00,0x42,0x41,0x4C,0x41,0x42,0x41,0x4C,0x41,0x42,0x41,0x4C,0x41,0x42,0x00,0x6A
     };
-    // This is a sample monitor EDID - FOR SAMPLE PURPOSES ONLY
+    // This is a sample monitor EDID - FOR SAMPLE PURPOSES ONLY (EDID in the Original Forked Code)
     //{
     //    0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x79,0x5E,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xA6,0x01,0x03,0x80,0x28,
     //    0x1E,0x78,0x0A,0xEE,0x91,0xA3,0x54,0x4C,0x99,0x26,0x0F,0x50,0x54,0x20,0x00,0x00,0x01,0x01,0x01,0x01,0x01,0x01,
@@ -108,29 +108,43 @@ namespace indirect_disp {
 
     void IndirectAdapter::IndirectAdapterFinishInit()
     {
-        // ==============================
+        // =========================== Comment of Original Forked Code =====================================================
         // TODO: In a real driver, the EDID should be retrieved dynamically from a connected physical monitor. The EDID
         // provided here is purely for demonstration, as it describes only 640x480 @ 60 Hz and 800x600 @ 60 Hz. Monitor
         // manufacturers are required to correctly fill in physical monitor attributes in order to allow the OS to optimize
         // settings like viewing distance and scale factor. Manufacturers should also use a unique serial number every
         // single device to ensure the OS can tell the monitors apart.
-        // ==============================
+        // =================================================================================================================
 
         m_pIddCxMonitorInfo->Size = sizeof(IDDCX_MONITOR_INFO);
-        m_pIddCxMonitorInfo->MonitorType = DISPLAYCONFIG_OUTPUT_TECHNOLOGY_HDMI;
+        m_pIddCxMonitorInfo->MonitorType = DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_VIRTUAL;
+
+        // This is a zero based unique identifier for this connector, it should be unique for this adapter and the value should
+        // not change for this connector across system reboot or driver upgrade.
+        // The value has to be between 0 and (IDDCX_ADAPTER_CAPS.MaxMonitorsSupported-1)
         m_pIddCxMonitorInfo->ConnectorIndex = 0;
+
         m_pIddCxMonitorInfo->MonitorDescription.Size = sizeof(IDDCX_MONITOR_INFO::MonitorDescription);
         m_pIddCxMonitorInfo->MonitorDescription.Type = IDDCX_MONITOR_DESCRIPTION_TYPE_EDID;
+
+        // The monitor description is EDID or no EDID description available
+        // If the monitor has no description then IDDCX_MONITOR_DESCRIPTION_TYPE_EDID shall be used with zero description size
+        // and null pointer for data
+#ifndef MONITOR_NO_EDID
         m_pIddCxMonitorInfo->MonitorDescription.DataSize = sizeof(s_KnownMonitorEdid);
         m_pIddCxMonitorInfo->MonitorDescription.pData = const_cast<BYTE*>(s_KnownMonitorEdid);
+#else
+        m_pIddCxMonitorInfo->MonitorDescription.DataSize = 0;
+        m_pIddCxMonitorInfo->MonitorDescription.pData = NULL;
+#endif
 
-        // ==============================
+        // =========================== Comment of Original Forked Code =====================================================
         // TODO: The monitor's container ID should be distinct from "this" device's container ID if the monitor is not
         // permanently attached to the display adapter device object. The container ID is typically made unique for each
         // monitor and can be used to associate the monitor with other devices, like audio or input devices. In this
         // sample we generate a random container ID GUID, but it's best practice to choose a stable container ID for a
         // unique monitor or to use "this" device's container ID for a permanent/integrated monitor.
-        // ==============================
+        // =================================================================================================================
 
         // Create a container ID
         CoCreateGuid(&m_pIddCxMonitorInfo->MonitorContainerId);

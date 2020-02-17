@@ -27,8 +27,6 @@ DEFINE_GUID(GUID_DEV_INDIRECT_DISP ,
 #define INDIRECT_DISPLAY_COMPATIBLE_IDS_LEN sizeof (INDIRECT_DISPLAY_COMPATIBLE_IDS)
 
 
-#include <winioctl.h>
-
 // FILE_READ_DATA  -> User Application Reads
 // FILE_WRITE_DATA -> User Application Writes
 

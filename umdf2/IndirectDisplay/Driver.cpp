@@ -53,10 +53,32 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
 	WDF_PNPPOWER_EVENT_CALLBACKS PnpPowerCallbacks;
+	TCHAR DebugBuf[128];
 
 	UNREFERENCED_PARAMETER(Driver);
 
-	OutputDebugString(L"[IndirDisp] Evt_IddDeviceAdd\n");
+	OutputDebugString(TEXT("[IndirDisp] Evt_IddDeviceAdd\n"));
+
+	IDARG_OUT_GETVERSION IddCxVersion;
+	IddCxGetVersion(&IddCxVersion);
+	if (!NT_SUCCESS(Status)) {
+		StringCbPrintf(DebugBuf, sizeof(DebugBuf),
+			TEXT("[IndirDisp] IddCxVersion() Failed: 0x%x\n"),
+			Status);
+		OutputDebugString(DebugBuf);
+	}
+
+    StringCbPrintf(DebugBuf, sizeof(DebugBuf),
+        TEXT("[IndirDisp] IddCx Version: 0x%lx\n"),
+        IddCxVersion.IddCxVersion);
+    OutputDebugString(DebugBuf);
+
+	if (IDDCX_VERSION_LATEST > IddCxVersion.IddCxVersion) {
+        StringCbPrintf(DebugBuf, sizeof(DebugBuf),
+            TEXT("[IndirDisp] Error: Driver's IddCx Version 0x%lx is greater than System's 0x%lx\n"),
+            IDDCX_VERSION_LATEST, IddCxVersion.IddCxVersion);
+        OutputDebugString(DebugBuf);
+	}
 
 	// Register for power callbacks - in this sample only power-on is needed
 	//
@@ -67,22 +89,37 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 	IDD_CX_CLIENT_CONFIG IddConfig;
 	IDD_CX_CLIENT_CONFIG_INIT(&IddConfig);
 
+    StringCbPrintf(DebugBuf, sizeof(DebugBuf),
+        TEXT("[IndirDisp] IddConfig.Size After Init: %lu\n"),
+        IddConfig.Size);
+    OutputDebugString(DebugBuf);
+
 	// If the driver wishes to handle custom IoDeviceControl requests, it's necessary to use this callback since IddCx
 	// redirects IoDeviceControl requests to an internal queue. This sample does not need this.
 	IddConfig.EvtIddCxDeviceIoControl = Evt_IddIoDeviceControl;
 
-	IddConfig.EvtIddCxAdapterInitFinished = Evt_IddAdapterInitFinished;
-
 	IddConfig.EvtIddCxParseMonitorDescription = Evt_IddParseMonitorDescription;
+
+	IddConfig.EvtIddCxAdapterInitFinished = Evt_IddAdapterInitFinished;
+	IddConfig.EvtIddCxAdapterCommitModes = Evt_IddAdapterCommitModes;
+
 	IddConfig.EvtIddCxMonitorGetDefaultDescriptionModes = Evt_IddMonitorGetDefaultModes;
 	IddConfig.EvtIddCxMonitorQueryTargetModes = Evt_IddMonitorQueryModes;
-	IddConfig.EvtIddCxAdapterCommitModes = Evt_IddAdapterCommitModes;
+
 	IddConfig.EvtIddCxMonitorAssignSwapChain = Evt_IddMonitorAssignSwapChain;
 	IddConfig.EvtIddCxMonitorUnassignSwapChain = Evt_IddMonitorUnassignSwapChain;
+
+#if IDDCX_VERSION_MINOR >= 4
+	IddConfig.EvtIddCxMonitorGetPhysicalSize = Evt_IddMonitorGetPhysicalSize;
+#endif
 
 	Status = IddCxDeviceInitConfig(pDeviceInit, &IddConfig);
 	if (!NT_SUCCESS(Status))
 	{
+		StringCbPrintf(DebugBuf, sizeof(DebugBuf),
+			TEXT("[IndirDisp] IddCxDeviceInitConfig Failed: 0x%x\n"),
+			Status);
+		OutputDebugString(DebugBuf);
 		return Status;
 	}
 
@@ -102,6 +139,7 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 	Status = WdfDeviceCreate(&pDeviceInit, &Attr, &Device);
 	if (!NT_SUCCESS(Status))
 	{
+		OutputDebugString(TEXT("[IndirDisp] WdfDeviceCreate Failed!\n"));
 		return Status;
 	}
 
@@ -110,13 +148,16 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
 		(LPGUID)&GUID_DEVINTERFACE_INDIRECT_DEVICE,
 		NULL // ReferenceString
 	);
-
 	if (!NT_SUCCESS(Status)) {
-		OutputDebugString(L"WdfDeviceCreateDeviceInterface failed.\n");
+		OutputDebugString(L"[IndirDisp] WdfDeviceCreateDeviceInterface failed.\n");
 		return Status;
 	}
 
 	Status = IddCxDeviceInitialize(Device);
+	if (!NT_SUCCESS(Status)) {
+		OutputDebugString(L"[IndirDisp] IddCxDeviceInitialize Failed.\n");
+		return Status;
+	}
 
 	OutputDebugString(L"[IndirDisp] Exit Evt_IddDeviceAdd.\n");
 

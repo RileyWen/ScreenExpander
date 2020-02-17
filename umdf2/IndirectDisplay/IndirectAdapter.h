@@ -32,7 +32,7 @@ namespace indirect_disp {
 
         // The specification on the monitors attached to this adapter.
         //
-        // Since now we assume that every child monitor has the same
+        // Since in this driver we assume that every child monitor has the same
         // specification, we just store the specication here as a template
         // for each newly arrived monitor.
         //

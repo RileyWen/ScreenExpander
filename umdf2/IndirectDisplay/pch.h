@@ -5,11 +5,11 @@
 #define WIN32_NO_STATUS
 
 #ifndef UMDF_MINIMUM_VERSION_REQUIRED
-#define UMDF_MINIMUM_VERSION_REQUIRED 25
+#define UMDF_MINIMUM_VERSION_REQUIRED 27
 #endif
 
 #ifndef UMDF_VERSION_MINOR
-#define UMDF_VERSION_MINOR 25
+#define UMDF_VERSION_MINOR 27
 #endif
 
 
@@ -32,14 +32,23 @@
 #define IDDCX_VERSION_MINOR 3
 #endif
 
-
 #include <unknwn.h>
 #include <winrt/base.h>
 
 #include <Windows.h>
 
 #include <wdf.h>
+
+#if   IDDCX_VERSION_MINOR == 3
+#include <iddcx/1.3/IddCx.h>
+
+#elif IDDCX_VERSION_MINOR >= 4
 #include <iddcx/1.4/IddCx.h>
+
+#else
+#error At least IddCx 1.3 is required!
+
+#endif
 
 #include <cstdio>
 #include <strsafe.h>
@@ -50,7 +59,11 @@
 
 #include <memory>
 #include <vector>
+#include <array>
 
 #include "SharedDefs.h"
+
+// If defined, new monitors will be reported without EDID.
+#define MONITOR_NO_EDID
 
 #pragma hdrstop
