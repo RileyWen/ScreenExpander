@@ -4,6 +4,47 @@ TCHAR PIPE_NAME[] = TEXT("\\\\.\\pipe\\RileyTestPipe");
 
 using namespace std;
 
+void PipeTest3_AsyncPipeServer()
+{
+}
+
+void PipeTest2_OptimisiticLock() {
+    SpinLock lock, OutLock;
+    OutLock.Lock();
+
+    auto snd_thread = [&] {
+        _tstring cmd;
+
+        while (1) {
+            _tcin >> cmd;
+            
+            if (cmd == T("l"))
+                lock.Lock();
+            else if (cmd == T("u"))
+                lock.Unlock();
+            else if (cmd == T("q"))
+                break;
+        }
+
+        OutLock.Unlock();
+    };
+
+    auto recv_thread = [&] {
+        while (!OutLock.TryLock()) {
+            lock.Lock();
+            _tprintf(T("."));
+            lock.Unlock();
+
+            fflush(stdout);
+            this_thread::sleep_for(chrono::seconds(1));
+        }
+    };
+    
+    thread t1(snd_thread), t2(recv_thread);
+    t1.join();
+    t2.join();
+}
+
 void PipeTest1_ConnectAfterCreated_RecvByPacket() {
     mutex mux;
     condition_variable cv;

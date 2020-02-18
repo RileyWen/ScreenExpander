@@ -25,9 +25,11 @@ int main() {
             else
                 INFO("NewMonitorTest Failed!\n");
         }
-        else if (cmd == T("p")) {
+        else if (cmd == T("p1")) {
             PipeTest1_ConnectAfterCreated_RecvByPacket();
         }
+        else if (cmd == T("p2"))
+            PipeTest2_OptimisiticLock();
         else if (cmd == T("q")) {
             break;
         }

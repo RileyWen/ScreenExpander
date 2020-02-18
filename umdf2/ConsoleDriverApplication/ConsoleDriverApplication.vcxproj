@@ -39,11 +39,13 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NamedPipeTest.cpp" />
     <ClCompile Include="OpenUmdfInterfaceTest.cpp" />
+    <ClCompile Include="SpinLock.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ErrorOutput.h" />
     <ClInclude Include="NamedPipeTest.h" />
     <ClInclude Include="OpenUmdfInterfaceTest.h" />
+    <ClInclude Include="SpinLock.h" />
     <ClInclude Include="PublicHeader.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -1,6 +1,7 @@
 #include "PublicHeader.h"
 #include "ErrorOutput.h"
 #include "OpenUmdfInterfaceTest.h"
+#include <winioctl.h>
 
 HANDLE OpenDeviceInterface(DWORD dwDesiredAccess);
 
