@@ -30,6 +30,8 @@ int main() {
         }
         else if (cmd == T("p2"))
             PipeTest2_OptimisiticLock();
+        else if (cmd == T("p3"))
+            PipeTest3_AsyncPipeServer();
         else if (cmd == T("q")) {
             break;
         }

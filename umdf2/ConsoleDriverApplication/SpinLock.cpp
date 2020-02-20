@@ -1,4 +1,5 @@
 #include "SpinLock.h"
+#include "ErrorOutput.h"
 
 SpinLock::SpinLock() : m_LockValue(0U) { }
 

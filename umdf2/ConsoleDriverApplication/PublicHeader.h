@@ -13,6 +13,7 @@
 #include <tchar.h>
 
 #include <Windows.h>
+
 #include <SetupAPI.h>
 
 #include "SharedDefs.h"
