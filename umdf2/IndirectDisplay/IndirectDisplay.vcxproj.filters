@@ -66,6 +66,12 @@
     <ClInclude Include="IddCxCallbacks.h">
       <Filter>Header Files\IndirectDisp</Filter>
     </ClInclude>
+    <ClInclude Include="AsyncPipeServer.h">
+      <Filter>Header Files\IndirectDisp</Filter>
+    </ClInclude>
+    <ClInclude Include="SpinLock.h">
+      <Filter>Header Files\IndirectDisp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Driver.cpp">
@@ -87,6 +93,12 @@
       <Filter>Source Files\IndirectDisp</Filter>
     </ClCompile>
     <ClCompile Include="IndirectMonitor.cpp">
+      <Filter>Source Files\IndirectDisp</Filter>
+    </ClCompile>
+    <ClCompile Include="AsyncPipeServer.cpp">
+      <Filter>Source Files\IndirectDisp</Filter>
+    </ClCompile>
+    <ClCompile Include="SpinLock.cpp">
       <Filter>Source Files\IndirectDisp</Filter>
     </ClCompile>
   </ItemGroup>

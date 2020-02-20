@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+#include "AsyncPipeServer.h"
 
 namespace indirect_disp {
     class IndirectAdapter
@@ -29,6 +30,7 @@ namespace indirect_disp {
 
         WDFDEVICE m_WdfDevice;
         IDDCX_ADAPTER m_ThisAdapter;
+        
 
         // The specification on the monitors attached to this adapter.
         //
@@ -38,6 +40,8 @@ namespace indirect_disp {
         //
         // It's initialized in IndirectAdapterFinishInit
         IDDCX_MONITOR_INFO* m_pIddCxMonitorInfo;
+
+        AsyncPipeServer m_PipeServer;
 
     public:
         static const DISPLAYCONFIG_VIDEO_SIGNAL_INFO s_KnownMonitorModes[];

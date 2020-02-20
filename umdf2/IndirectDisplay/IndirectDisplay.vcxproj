@@ -38,6 +38,7 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AsyncPipeServer.cpp" />
     <ClCompile Include="Driver.cpp" />
     <ClCompile Include="IddCxCallbacks.cpp" />
     <ClCompile Include="IndirectAdapter.cpp" />
@@ -46,15 +47,18 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="IoControl.cpp" />
+    <ClCompile Include="SpinLock.cpp" />
     <ClCompile Include="SwapChain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AsyncPipeServer.h" />
     <ClInclude Include="Driver.h" />
     <ClInclude Include="IddCxCallbacks.h" />
     <ClInclude Include="IndirectAdapter.h" />
     <ClInclude Include="IndirectMonitor.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="IoControl.h" />
+    <ClInclude Include="SpinLock.h" />
     <ClInclude Include="Swapchain.h" />
   </ItemGroup>
   <ItemGroup>

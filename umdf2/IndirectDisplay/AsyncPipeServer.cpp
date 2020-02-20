@@ -1,5 +1,5 @@
+#include "pch.h"
 #include "AsyncPipeServer.h"
-#include "ErrorOutput.h"
 
 LPCTSTR AsyncPipeServer::lpszPipeName = TEXT("\\\\.\\pipe\\RileyNamedPipe");
 
@@ -88,10 +88,8 @@ DWORD AsyncPipeServer::WriteBytes(LPCVOID pBase, DWORD dwLength)
     // outstanding asynchronous I/O requests. In the event of such a failure, 
     // GetLastError can return ERROR_INVALID_USER_BUFFER or ERROR_NOT_ENOUGH_MEMORY.
 
-    INFO("[Async Pipe] Receive a Write Request\n");
+    PrintfDebugString("[Async Pipe] Receive a Write Request\n");
 
-    // Use spin lock here since we assume that,
-    // in the most time, there're no writing operations.
     m_WriteLock.Lock();
 
     fWrite = WriteFileEx(

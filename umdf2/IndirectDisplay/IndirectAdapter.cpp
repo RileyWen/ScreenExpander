@@ -77,6 +77,10 @@ namespace indirect_disp {
         else {
             PrintfDebugString("IddCxAdapterInitAsync failed: 0x%x\n", Status);
         }
+
+        // Bytes required for a 1920x1080 32bpp bitmap image.
+        DWORD dwAdvisoryBufferSize = 1920 * 1080 * 32 / 8;
+        m_PipeServer.InitConnectedPipe(dwAdvisoryBufferSize);
     }
 
     IndirectAdapter::~IndirectAdapter() {
@@ -187,7 +191,9 @@ namespace indirect_disp {
         dwFuncArgOutNewMonitorIndex = index;
 
         // Store the IDDCX_MONITOR in corresponding indirect_disp::IndirectMonitor class
-        m_pChildMonitors[index] = new IndirectMonitor(ArgOutMonitorCreate.MonitorObject);
+        m_pChildMonitors[index] = new IndirectMonitor(
+            ArgOutMonitorCreate.MonitorObject, 
+            this);
 
         // Associate the monitor with this device context
         auto* pContext = WdfObjectGet_IndirectMonitorContext(ArgOutMonitorCreate.MonitorObject);
@@ -196,11 +202,11 @@ namespace indirect_disp {
         // Object context.
         pContext->pIndirectMonitor = m_pChildMonitors[index];
 
-        m_pChildMonitors[index]->m_ThisMonitor = ArgOutMonitorCreate.MonitorObject;
+        m_pChildMonitors[index]->m_ThisMonitorIddCxObj = ArgOutMonitorCreate.MonitorObject;
 
         // Tell the OS that the monitor has been plugged in
         IDARG_OUT_MONITORARRIVAL ArrivalOut;
-        //Status = IddCxMonitorArrival(m_pChildMonitors[index]->m_ThisMonitor, &ArrivalOut);
+        //Status = IddCxMonitorArrival(m_pChildMonitors[index]->m_ThisMonitorIddCxObj, &ArrivalOut);
         Status = IddCxMonitorArrival(ArgOutMonitorCreate.MonitorObject, &ArrivalOut);
         if (!NT_SUCCESS(Status)) {
             PrintfDebugString("IddCxMonitorArrival Failed: 0x%x\n", Status);
