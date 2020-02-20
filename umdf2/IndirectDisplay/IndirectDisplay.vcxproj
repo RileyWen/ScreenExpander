@@ -35,9 +35,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="AsyncPipeServer.cpp" />
     <ClCompile Include="Driver.cpp" />
     <ClCompile Include="IddCxCallbacks.cpp" />

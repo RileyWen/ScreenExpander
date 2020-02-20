@@ -41,9 +41,9 @@ namespace indirect_disp {
         // It's initialized in IndirectAdapterFinishInit
         IDDCX_MONITOR_INFO* m_pIddCxMonitorInfo;
 
+    public:
         AsyncPipeServer m_PipeServer;
 
-    public:
         static const DISPLAYCONFIG_VIDEO_SIGNAL_INFO s_KnownMonitorModes[];
         static const BYTE s_KnownMonitorEdid[];
     };

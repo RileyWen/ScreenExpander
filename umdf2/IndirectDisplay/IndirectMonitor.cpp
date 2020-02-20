@@ -28,7 +28,7 @@ namespace indirect_disp {
         else
         {
             // Create a new swap-chain processing thread
-            m_ProcessingThread.reset(new SwapChainProcessor(SwapChain, Device, NewFrameEvent));
+            m_ProcessingThread.reset(new SwapChainProcessor(SwapChain, Device, NewFrameEvent, this));
         }
     }
 

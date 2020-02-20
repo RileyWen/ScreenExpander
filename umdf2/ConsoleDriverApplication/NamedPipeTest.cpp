@@ -7,44 +7,73 @@ using namespace std;
 
 const DWORD BUF_SIZE = 1024;
 
-HANDLE ClientConnectToPipe(LPCTSTR lpszPipeName) {
-    HANDLE hPipe;
-    DWORD dwMode;
+HANDLE ClientConnectToPipe(LPCTSTR lpszPipeName);
+
+void PipeTest4_ReceiveImages()
+{
+    HANDLE hPipe = INVALID_HANDLE_VALUE;
     BOOL bResult;
+    PBYTE pBuf = NULL;
+    DWORD byteRead;
 
-    do {
-        hPipe = CreateFile(
-            lpszPipeName,
-            GENERIC_READ | FILE_WRITE_ATTRIBUTES,	// It's required by SetNamedPipeHandleState
-            0,										// No sharing
-            NULL,									// Default security attributes
-            OPEN_EXISTING,
-            0,
-            NULL);
-        if (hPipe == INVALID_HANDLE_VALUE) {
-            if (GetLastError() == ERROR_PIPE_BUSY) {
-                WaitNamedPipe(lpszPipeName, NMPWAIT_WAIT_FOREVER);
-                continue;
-            }
-            else
-                return INVALID_HANDLE_VALUE;
-        }
-        break;
-    } while (1);
+    const DWORD dwImageSize = 1920 * 1080 * 32 / 8;
 
-    dwMode = PIPE_READMODE_MESSAGE;
-    bResult = SetNamedPipeHandleState(
-        hPipe,
-        &dwMode,
-        NULL,
-        NULL);
-    if (!bResult) {
-        CloseHandle(hPipe);
-        return INVALID_HANDLE_VALUE;
+    hPipe = INVALID_HANDLE_VALUE;
+
+    pBuf = (PBYTE)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwImageSize);
+
+    INFO("[Client] Start connecting the pipe.\n");
+
+
+    INFO("[Client] Start receiving messages from Server.\n");
+
+    //{
+    //    INFO("[Client] Sleep some seconds...\n");
+    //    // Sleep some seconds to test whether the data are
+    //    // received by stream or by packet.
+    //    this_thread::sleep_for(chrono::seconds(5));
+    //}
+
+    hPipe = ClientConnectToPipe(AsyncPipeServer::lpszPipeName);
+    if (hPipe == INVALID_HANDLE_VALUE) {
+        INFO("[Client] Failed to connect to the pipe: ");
+        GetStrLastError();
+        return;
     }
 
-    return hPipe;
+    INFO("[Client] Connected.\n");
+
+    INFO("[Client] Wait server for unlocking.\n");
+
+    do {
+        byteRead = 0;
+
+        bResult = ReadFile(
+            hPipe,
+            pBuf,
+            dwImageSize,
+            &byteRead,
+            NULL);
+
+        if (!bResult &&
+            GetLastError() != ERROR_MORE_DATA) { // Our buffer is not suffient for the whole data
+            INFO("[Client] Read pipe error: ");
+            GetStrLastError();
+            break;
+        }
+
+        _tprintf(T("[Client] Receive %f KB from server\n"), float(byteRead) / 1024.f );
+
+    } while (1);
+
+    _tprintf(T("[Client] Closing...\n"));
+
+    if (pBuf)
+        HeapFree(GetProcessHeap(), 0, pBuf);
+
+    CloseHandle(hPipe);
 }
+
 
 void PipeTest3_AsyncPipeServer()
 {
@@ -125,6 +154,7 @@ void PipeTest3_AsyncPipeServer()
         if (hPipe == INVALID_HANDLE_VALUE) {
             INFO("[Client] Failed to connect to the pipe: ");
             GetStrLastError();
+            return;
         }
         int sum = 0;
 
@@ -341,3 +371,43 @@ void PipeTest1_ConnectAfterCreated_RecvByPacket() {
     t1.join();
     t2.join();
 }
+
+HANDLE ClientConnectToPipe(LPCTSTR lpszPipeName) {
+    HANDLE hPipe;
+    DWORD dwMode;
+    BOOL bResult;
+
+    do {
+        hPipe = CreateFile(
+            lpszPipeName,
+            GENERIC_READ | FILE_WRITE_ATTRIBUTES,	// It's required by SetNamedPipeHandleState
+            0,										// No sharing
+            NULL,									// Default security attributes
+            OPEN_EXISTING,
+            0,
+            NULL);
+        if (hPipe == INVALID_HANDLE_VALUE) {
+            if (GetLastError() == ERROR_PIPE_BUSY) {
+                WaitNamedPipe(lpszPipeName, NMPWAIT_WAIT_FOREVER);
+                continue;
+            }
+            else
+                return INVALID_HANDLE_VALUE;
+        }
+        break;
+    } while (1);
+
+    dwMode = PIPE_READMODE_MESSAGE;
+    bResult = SetNamedPipeHandleState(
+        hPipe,
+        &dwMode,
+        NULL,
+        NULL);
+    if (!bResult) {
+        CloseHandle(hPipe);
+        return INVALID_HANDLE_VALUE;
+    }
+
+    return hPipe;
+}
+

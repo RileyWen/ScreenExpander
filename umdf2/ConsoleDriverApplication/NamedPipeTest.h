@@ -9,3 +9,5 @@ void PipeTest1_ConnectAfterCreated_RecvByPacket();
 void PipeTest2_OptimisiticLock();
 
 void PipeTest3_AsyncPipeServer();
+
+void PipeTest4_ReceiveImages();

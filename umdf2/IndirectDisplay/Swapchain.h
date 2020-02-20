@@ -18,7 +18,8 @@ namespace indirect_disp {
     class SwapChainProcessor
     {
     public:
-        SwapChainProcessor(IDDCX_SWAPCHAIN hSwapChain, std::shared_ptr<Direct3DDevice> Device, HANDLE NewFrameEvent);
+        SwapChainProcessor(IDDCX_SWAPCHAIN hSwapChain, std::shared_ptr<Direct3DDevice> Device,
+                           HANDLE NewFrameEvent, struct IndirectMonitor* pParentMonitor);
         ~SwapChainProcessor();
 
     private:
@@ -32,7 +33,9 @@ namespace indirect_disp {
         void RunCore();
 
     public:
-        IDDCX_SWAPCHAIN m_hSwapChain;
+        struct IndirectMonitor* m_pParentMonitor;
+
+        IDDCX_SWAPCHAIN m_hThisSwapChainIddCxObj;
         std::shared_ptr<Direct3DDevice> m_Device;
         
         // A handle that points to 'RunThread' 
@@ -43,6 +46,5 @@ namespace indirect_disp {
 
         // Informed by user or our driver to stop processing images
         winrt::handle m_hTerminateEvent;
-
     };
 }

@@ -1,11 +1,13 @@
 #include "pch.h"
 #include "Swapchain.h"
+#include "IndirectMonitor.h"
 
 namespace indirect_disp {
 
 #pragma region Direct3DDevice
 
-    Direct3DDevice::Direct3DDevice(LUID AdapterLuid) : AdapterLuid(AdapterLuid) { }
+    Direct3DDevice::Direct3DDevice(LUID AdapterLuid)
+        : AdapterLuid(AdapterLuid) { }
 
     HRESULT Direct3DDevice::Init()
     {
@@ -44,8 +46,11 @@ namespace indirect_disp {
 
 #pragma region SwapChainProcessor
 
-    SwapChainProcessor::SwapChainProcessor(IDDCX_SWAPCHAIN hSwapChain, std::shared_ptr<Direct3DDevice> Device, HANDLE NewFrameEvent)
-        : m_hSwapChain(hSwapChain), m_Device(Device), m_hAvailableBufferEvent(NewFrameEvent)
+    SwapChainProcessor::SwapChainProcessor(
+        IDDCX_SWAPCHAIN hSwapChain, std::shared_ptr<Direct3DDevice> Device,
+        HANDLE NewFrameEvent, IndirectMonitor* pParentMonitor)
+        : m_hThisSwapChainIddCxObj(hSwapChain), m_Device(Device),
+        m_hAvailableBufferEvent(NewFrameEvent), m_pParentMonitor(pParentMonitor)
     {
         m_hTerminateEvent.attach(CreateEvent(nullptr, FALSE, FALSE, nullptr));
 
@@ -82,8 +87,8 @@ namespace indirect_disp {
 
         // Always delete the swap-chain object when swap-chain processing loop terminates in order to kick the system to
         // provide a new swap-chain if necessary.
-        WdfObjectDelete((WDFOBJECT)m_hSwapChain);
-        m_hSwapChain = nullptr;
+        WdfObjectDelete((WDFOBJECT)m_hThisSwapChainIddCxObj);
+        m_hThisSwapChainIddCxObj = nullptr;
 
         AvRevertMmThreadCharacteristics(AvTaskHandle);
     }
@@ -102,7 +107,7 @@ namespace indirect_disp {
         SetDevice.pDevice = DxgiDevice.get();
 
         HRESULT hr;
-        hr = IddCxSwapChainSetDevice(m_hSwapChain, &SetDevice);
+        hr = IddCxSwapChainSetDevice(m_hThisSwapChainIddCxObj, &SetDevice);
         if (FAILED(hr))
         {
             return;
@@ -118,7 +123,7 @@ namespace indirect_disp {
 
             // Ask for the next buffer from the producer
             IDARG_OUT_RELEASEANDACQUIREBUFFER Buffer = {};
-            hr = IddCxSwapChainReleaseAndAcquireBuffer(m_hSwapChain, &Buffer);
+            hr = IddCxSwapChainReleaseAndAcquireBuffer(m_hThisSwapChainIddCxObj, &Buffer);
 
             // AcquireBuffer immediately returns STATUS_PENDING if no buffer is yet available
             if (hr == E_PENDING)
@@ -166,7 +171,7 @@ namespace indirect_disp {
                 D3D11_MAPPED_SUBRESOURCE MappedSubResc;
                 hr = m_Device->DeviceContext->Map(AcquiredTexture.get(), 0, D3D11_MAP_READ, 0, &MappedSubResc);
                 if (FAILED(hr)) {
-                    if (hr == E_INVALIDARG){
+                    if (hr == E_INVALIDARG) {
                         D3D11_TEXTURE2D_DESC StagingTextureDesc;
                         StagingTextureDesc = TextureDesc;
                         StagingTextureDesc.Usage = D3D11_USAGE_STAGING;
@@ -197,23 +202,26 @@ namespace indirect_disp {
 
                 }
 
-//#define EXTRACT_A(_p, _idx) ((((PUINT32(_p))[_idx]) & 0xFF000000) >> 24)
-//#define EXTRACT_R(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x00FF0000) >> 16)
-//#define EXTRACT_G(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x0000FF00) >>  8)
-//#define EXTRACT_B(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x000000FF) >>  0)
-//
-//                PrintfDebugString("Pixel 0: A-%hhu R-%hhu G-%hhu B-%hhu\n",
-//                    EXTRACT_A(MappedSubResc.pData, 0), EXTRACT_R(MappedSubResc.pData, 0),
-//                    EXTRACT_G(MappedSubResc.pData, 0), EXTRACT_B(MappedSubResc.pData, 0)
-//                );
-//
-//                PrintfDebugString("Pixel 1: A-%hhu R-%hhu G-%hhu B-%hhu\n",
-//                    EXTRACT_A(MappedSubResc.pData, 1), EXTRACT_R(MappedSubResc.pData, 1),
-//                    EXTRACT_G(MappedSubResc.pData, 1), EXTRACT_B(MappedSubResc.pData, 1)
-//                );
-
-
-
+                //#define EXTRACT_A(_p, _idx) ((((PUINT32(_p))[_idx]) & 0xFF000000) >> 24)
+                //#define EXTRACT_R(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x00FF0000) >> 16)
+                //#define EXTRACT_G(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x0000FF00) >>  8)
+                //#define EXTRACT_B(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x000000FF) >>  0)
+                //
+                //                PrintfDebugString("Pixel 0: A-%hhu R-%hhu G-%hhu B-%hhu\n",
+                //                    EXTRACT_A(MappedSubResc.pData, 0), EXTRACT_R(MappedSubResc.pData, 0),
+                //                    EXTRACT_G(MappedSubResc.pData, 0), EXTRACT_B(MappedSubResc.pData, 0)
+                //                );
+                //
+                //                PrintfDebugString("Pixel 1: A-%hhu R-%hhu G-%hhu B-%hhu\n",
+                //                    EXTRACT_A(MappedSubResc.pData, 1), EXTRACT_R(MappedSubResc.pData, 1),
+                //                    EXTRACT_G(MappedSubResc.pData, 1), EXTRACT_B(MappedSubResc.pData, 1)
+                //                );
+                
+                // The image format is always DXGI_FORMAT_B8G8R8A8_UNORM,
+                // so the size of a frame is Height*Width bytes.
+                m_pParentMonitor->m_pParentAdapter->m_PipeServer.WriteBytes(
+                    MappedSubResc.pData,
+                    TextureDesc.Width * TextureDesc.Height);
                 
                 m_Device->DeviceContext->Unmap(AcquiredTexture.get(), 0);
 
@@ -232,7 +240,7 @@ namespace indirect_disp {
             EndOneSurfaceProcessing:
 
                 AcquiredBuffer = nullptr;
-                hr = IddCxSwapChainFinishedProcessingFrame(m_hSwapChain);
+                hr = IddCxSwapChainFinishedProcessingFrame(m_hThisSwapChainIddCxObj);
                 if (FAILED(hr))
                 {
                     break;
@@ -243,7 +251,7 @@ namespace indirect_disp {
                 //
                 // Drivers should report information about sub-frame timings, like encode time, send time, etc.
                 // ==============================
-                // IddCxSwapChainReportFrameStatistics(m_hSwapChain, ...);
+                // IddCxSwapChainReportFrameStatistics(m_hThisSwapChainIddCxObj, ...);
             }
             else
             {

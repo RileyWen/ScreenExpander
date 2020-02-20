@@ -37,9 +37,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <Inf Include="IndirectDisplay.inf">
       <Filter>Driver Files</Filter>
     </Inf>
