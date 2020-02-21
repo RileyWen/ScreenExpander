@@ -60,5 +60,5 @@ typedef struct {
 typedef struct {
     DWORD dwWidth;
     DWORD dwHeight;
-    BYTE  pData[MAX_IMAGE_HEIGHT * MAX_IMAGE_WIDTH];
+    BYTE  pData[MAX_IMAGE_HEIGHT * MAX_IMAGE_WIDTH * 32 / 8];
 } IMAGE_FRAME, *PIMAGE_FRAME;

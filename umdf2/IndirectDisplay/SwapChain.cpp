@@ -205,14 +205,16 @@ namespace indirect_disp {
                 }
 
                 // The image format is always DXGI_FORMAT_B8G8R8A8_UNORM,
-                // so the size of a frame is Height*Width bytes.
+                // so the size of a frame is Height*Width*32/8 bytes.
+                DWORD dwImageSizeBytes = TextureDesc.Width * TextureDesc.Height * 32 / 8;
+
                 m_pImageBuf->dwWidth = TextureDesc.Width;
                 m_pImageBuf->dwHeight = TextureDesc.Height;
-                CopyMemory(m_pImageBuf->pData, MappedSubResc.pData, TextureDesc.Width * TextureDesc.Height);
+                CopyMemory(m_pImageBuf->pData, MappedSubResc.pData, dwImageSizeBytes);
 
                 m_pParentMonitor->m_pParentAdapter->m_PipeServer.WriteBytes(
                     m_pImageBuf.get(),
-                    sizeof(DWORD) * 2 + TextureDesc.Width * TextureDesc.Height);
+                    sizeof(DWORD) * 2 + dwImageSizeBytes);
 
                 //m_pParentMonitor->m_pParentAdapter->m_PipeServer.WriteBytes(
                 //    MappedSubResc.pData,

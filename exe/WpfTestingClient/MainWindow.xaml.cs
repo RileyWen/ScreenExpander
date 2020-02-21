@@ -15,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace WpfTestingClient
 {
@@ -33,25 +34,20 @@ namespace WpfTestingClient
                 System.IO.HandleInheritability.None);
 
 
-            /*            object obj = FindName("Screen");
-                        if (obj is Image)
-                        {
-                            Debug.WriteLine("[Riley] Screen Found!");
+            //Screen.Dispatcher.BeginInvoke(imageUpdateDelegate);
 
-                            Image Screen = obj as Image;
+            DispatcherTimer timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(0.07)
+            };
+            timer.Tick += (o, e) =>
+            {
+                DateTime dtCurrentTime = DateTime.Now;
+                if (m_bitmap != null)
+                    Screen.Source = m_bitmap;
+            };
+            timer.IsEnabled = true;
 
-                            BitmapImage bitmap = new BitmapImage();
-                            bitmap.BeginInit();
-                            bitmap.UriSource = new Uri(@"http://static01.coloros.com/bbs/data/attachment/forum/201503/17/092752ywabeihuha0iza0d.jpg");
-                            bitmap.EndInit();
-
-                            Screen.Source = bitmap;
-                        }
-                        else
-                        {
-                            Debug.WriteLine("[Riley] Screen Not Found!");
-                        }
-            */
             new Thread(new ThreadStart(ImageUpdateThread)).Start();
 
             Debug.WriteLine("Init finished.");
@@ -59,6 +55,33 @@ namespace WpfTestingClient
 
         private void ImageUpdateThread()
         {
+
+            /*            BitmapImage bitmap = new BitmapImage();
+
+                        bitmap.BeginInit();
+                        bitmap.UriSource = new Uri(@"http://static01.coloros.com/bbs/data/attachment/forum/201503/17/092752ywabeihuha0iza0d.jpg");
+                        bitmap.EndInit();
+
+                        if (bitmap.IsDownloading)
+                        {
+                            bitmap.DownloadCompleted += (o, e) =>
+                            {
+                                bitmap.Freeze();
+                                m_bitmap = bitmap;
+                            };
+                        }
+                        else
+                        {
+                                bitmap.Freeze();
+                                m_bitmap = bitmap;
+                        }
+                        *//*            Screen.Source = bitmap;
+                        *//*
+
+
+
+                        while (true) ;
+            */
             Debug.WriteLine("New Image thread started.");
 
             byte[] ImageBytes = new byte[1920 * 1080 * 32 / 8 + 8];
@@ -71,6 +94,8 @@ namespace WpfTestingClient
 
             m_pipe.ReadMode = PipeTransmissionMode.Message;
 
+            Random random = new Random();
+
             try
             {
                 while (true)
@@ -80,13 +105,18 @@ namespace WpfTestingClient
                     Debug.WriteLine("Receive %d bytes", BytesRead);
                     ImageFrame frame = ImageFrame.FromBytes(ImageBytes);
 
-/*                    BitmapSource bmSource = BitmapSource.Create(
-                        (int)frame.Header.dwWidth, (int)frame.Header.dwWidth, 200, 200,
-                        PixelFormats.Bgra32, BitmapPalettes.Halftone256,
-                        frame.pData, (int)frame.Header.dwWidth);
+                    BitmapSource bmSource = BitmapSource.Create(
+                        (int)frame.Header.dwWidth, (int)frame.Header.dwHeight, 200, 200,
+                        PixelFormats.Bgra32, null,
+                        frame.pData, (int)frame.Header.dwWidth * 4);
 
-                    Screen.Source = bmSource;
-*/
+                    /*                    BitmapSource bmSource = BitmapSource.Create(
+                                            2, 1, 1, 1,
+                                            PixelFormats.Bgra32, null,
+                                            new byte[] { (byte)random.Next(), (byte)random.Next(), (byte)random.Next(), 255, (byte)random.Next(), 200, 200, 255 }, 2 * 4);
+                    */
+                    bmSource.Freeze();
+                    m_bitmap = bmSource;
                     Debug.WriteLine("Receive a frame");
                 }
             }
@@ -94,6 +124,8 @@ namespace WpfTestingClient
             {
                 Debug.WriteLine("ImageUpdateThread Exit");
             }
+
+
         }
 
         private void Button_Connect_Click(object sender, RoutedEventArgs e)
@@ -102,5 +134,6 @@ namespace WpfTestingClient
         }
 
         NamedPipeClientStream m_pipe;
+        BitmapSource m_bitmap;
     }
 }

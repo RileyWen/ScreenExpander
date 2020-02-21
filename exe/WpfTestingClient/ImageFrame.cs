@@ -31,7 +31,7 @@ namespace WpfTestingClient
                 ret.Header = (ImageHeader)Marshal.PtrToStructure(new IntPtr(pData), typeof(ImageHeader));
             }
 
-            var ImageDataSize = ret.Header.dwHeight * ret.Header.dwWidth;
+            var ImageDataSize = ret.Header.dwHeight * ret.Header.dwWidth * 32 / 8;
             ret.pData = new byte[ImageDataSize];
             Array.Copy(bytes, HdrSize, ret.pData, 0, ImageDataSize);
 
