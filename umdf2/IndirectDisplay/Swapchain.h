@@ -46,5 +46,8 @@ namespace indirect_disp {
 
         // Informed by user or our driver to stop processing images
         winrt::handle m_hTerminateEvent;
+
+    private:
+        std::unique_ptr<IMAGE_FRAME> m_pImageBuf;
     };
 }

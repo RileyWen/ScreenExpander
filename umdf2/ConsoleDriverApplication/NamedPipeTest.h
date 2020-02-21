@@ -11,3 +11,5 @@ void PipeTest2_OptimisiticLock();
 void PipeTest3_AsyncPipeServer();
 
 void PipeTest4_ReceiveImages();
+
+void PipeTest5_OnlyServer();

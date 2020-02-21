@@ -1,0 +1,21 @@
+﻿<Window x:Class="WpfTestingClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfTestingClient"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="1*" MinWidth="50"/>
+        </Grid.ColumnDefinitions>
+
+
+        <Image Grid.Column="0" x:Name="Screen"/>
+        <Button Content="Connect" Grid.Column="1"
+                Margin="24,0,24,0" VerticalAlignment="Center" Height="35"
+                Click="Button_Connect_Click"/>
+    </Grid>
+</Window>

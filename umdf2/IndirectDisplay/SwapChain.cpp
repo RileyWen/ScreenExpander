@@ -56,6 +56,8 @@ namespace indirect_disp {
 
         // Immediately create and run the swap-chain processing thread, passing 'this' as the thread parameter
         m_hThread.attach(CreateThread(nullptr, 0, RunThread, this, 0, nullptr));
+
+        m_pImageBuf = std::make_unique<IMAGE_FRAME>();
     }
 
     SwapChainProcessor::~SwapChainProcessor()
@@ -202,28 +204,21 @@ namespace indirect_disp {
 
                 }
 
-                //#define EXTRACT_A(_p, _idx) ((((PUINT32(_p))[_idx]) & 0xFF000000) >> 24)
-                //#define EXTRACT_R(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x00FF0000) >> 16)
-                //#define EXTRACT_G(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x0000FF00) >>  8)
-                //#define EXTRACT_B(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x000000FF) >>  0)
-                //
-                //                PrintfDebugString("Pixel 0: A-%hhu R-%hhu G-%hhu B-%hhu\n",
-                //                    EXTRACT_A(MappedSubResc.pData, 0), EXTRACT_R(MappedSubResc.pData, 0),
-                //                    EXTRACT_G(MappedSubResc.pData, 0), EXTRACT_B(MappedSubResc.pData, 0)
-                //                );
-                //
-                //                PrintfDebugString("Pixel 1: A-%hhu R-%hhu G-%hhu B-%hhu\n",
-                //                    EXTRACT_A(MappedSubResc.pData, 1), EXTRACT_R(MappedSubResc.pData, 1),
-                //                    EXTRACT_G(MappedSubResc.pData, 1), EXTRACT_B(MappedSubResc.pData, 1)
-                //                );
-                
                 // The image format is always DXGI_FORMAT_B8G8R8A8_UNORM,
                 // so the size of a frame is Height*Width bytes.
+                m_pImageBuf->dwWidth = TextureDesc.Width;
+                m_pImageBuf->dwHeight = TextureDesc.Height;
+                CopyMemory(m_pImageBuf->pData, MappedSubResc.pData, TextureDesc.Width * TextureDesc.Height);
+
                 m_pParentMonitor->m_pParentAdapter->m_PipeServer.WriteBytes(
-                    MappedSubResc.pData,
-                    TextureDesc.Width * TextureDesc.Height);
-                
-                m_Device->DeviceContext->Unmap(AcquiredTexture.get(), 0);
+                    m_pImageBuf.get(),
+                    sizeof(DWORD) * 2 + TextureDesc.Width * TextureDesc.Height);
+
+                //m_pParentMonitor->m_pParentAdapter->m_PipeServer.WriteBytes(
+                //    MappedSubResc.pData,
+                //    TextureDesc.Width * TextureDesc.Height);
+                //
+                //m_Device->DeviceContext->Unmap(AcquiredTexture.get(), 0);
 
                 // ==============================
                 // TODO: Process the frame here

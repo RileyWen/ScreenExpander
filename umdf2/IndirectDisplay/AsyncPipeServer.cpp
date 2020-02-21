@@ -90,7 +90,7 @@ DWORD AsyncPipeServer::WriteBytes(LPCVOID pBase, DWORD dwLength)
 
     PrintfDebugString("[Async Pipe] Receive a Write Request\n");
 
-    m_WriteLock.Lock();
+    //m_WriteLock.Lock();
 
     fWrite = WriteFileEx(
         m_PipeHandle,
@@ -99,7 +99,7 @@ DWORD AsyncPipeServer::WriteBytes(LPCVOID pBase, DWORD dwLength)
         m_pWriteOverlappedArg,
         WriteCompleted);
 
-    m_WriteLock.Unlock();
+    //m_WriteLock.Unlock();
 
     if (fWrite != 0)
         return S_OK;

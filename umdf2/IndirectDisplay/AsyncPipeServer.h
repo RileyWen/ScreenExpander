@@ -1,7 +1,7 @@
 #pragma once
 
 #include "pch.h"
-#include "SpinLock.h"
+//#include "SpinLock.h"
 
 class AsyncPipeServer {
 public:
@@ -39,5 +39,5 @@ private:
     //
     // Use spin lock here since we assume that,
     // in the most time, there're no writing operations.
-    SpinLock m_WriteLock;
+    //SpinLock m_WriteLock;
 };

@@ -1,5 +1,6 @@
 #include "NamedPipeTest.h"
 #include "AsyncPipeServer.h"
+#include "SharedDefs.h"
 
 TCHAR PIPE_NAME[] = TEXT("\\\\.\\pipe\\RileyTestPipe");
 
@@ -9,18 +10,52 @@ const DWORD BUF_SIZE = 1024;
 
 HANDLE ClientConnectToPipe(LPCTSTR lpszPipeName);
 
+void PipeTest5_OnlyServer() {
+    _tstring cmd;
+    DWORD dwResult;
+    AsyncPipeServer pipe;
+
+    if (!pipe.InitConnectedPipe(BUF_SIZE)) {
+        INFO("[Server] Failed to Create a pipe.\n");
+        GetStrLastError();
+        return;
+    }
+
+    INFO("[Server] The pipe is created successfully.\n");
+
+    INFO("[Server] Start reading stdin and send to Client\n");
+
+    while (1) {
+        _tcin >> cmd;
+        if (cmd == T("q"))
+            break;
+
+        DWORD bytesToWrite = static_cast<DWORD>(cmd.size() + 1) * sizeof(TCHAR);
+
+        dwResult = pipe.WriteBytes(cmd.c_str(), bytesToWrite);
+
+        if (dwResult) {
+            INFO("[Server] Failed to write to pipe:");
+            GetStrLastError();
+            break;
+        }
+
+    }
+
+    INFO("[Server] Closing the pipe...\n");
+
+}
+
 void PipeTest4_ReceiveImages()
 {
     HANDLE hPipe = INVALID_HANDLE_VALUE;
     BOOL bResult;
-    PBYTE pBuf = NULL;
-    DWORD byteRead;
-
-    const DWORD dwImageSize = 1920 * 1080 * 32 / 8;
+    std::unique_ptr<IMAGE_FRAME> pImageBuf;
+    DWORD dwByteRead;
 
     hPipe = INVALID_HANDLE_VALUE;
 
-    pBuf = (PBYTE)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwImageSize);
+    pImageBuf = std::make_unique<IMAGE_FRAME>();
 
     INFO("[Client] Start connecting the pipe.\n");
 
@@ -46,13 +81,13 @@ void PipeTest4_ReceiveImages()
     INFO("[Client] Wait server for unlocking.\n");
 
     do {
-        byteRead = 0;
+        dwByteRead = 0;
 
         bResult = ReadFile(
             hPipe,
-            pBuf,
-            dwImageSize,
-            &byteRead,
+            pImageBuf.get(),
+            sizeof(IMAGE_FRAME),
+            &dwByteRead,
             NULL);
 
         if (!bResult &&
@@ -62,14 +97,24 @@ void PipeTest4_ReceiveImages()
             break;
         }
 
-        _tprintf(T("[Client] Receive %f KB from server\n"), float(byteRead) / 1024.f );
+        _tprintf(T("[Client] %ux%u | %f KB | from server\n"),
+            pImageBuf->dwWidth, pImageBuf->dwHeight, float(dwByteRead) / 1024.f);
+
+#define EXTRACT_A(_p, _idx) ((((PUINT32(_p))[_idx]) & 0xFF000000) >> 24)
+#define EXTRACT_R(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x00FF0000) >> 16)
+#define EXTRACT_G(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x0000FF00) >>  8)
+#define EXTRACT_B(_p, _idx) ((((PUINT32(_p))[_idx]) & 0x000000FF) >>  0)
+
+        for (int i = 0; i < 10; i++) {
+            _tprintf(T("Pixel %d: A-%hhu R-%hhu G-%hhu B-%hhu\n"), i,
+                EXTRACT_A(pImageBuf->pData, i), EXTRACT_R(pImageBuf->pData, i),
+                EXTRACT_G(pImageBuf->pData, i), EXTRACT_B(pImageBuf->pData, i)
+            );
+        }
 
     } while (1);
 
     _tprintf(T("[Client] Closing...\n"));
-
-    if (pBuf)
-        HeapFree(GetProcessHeap(), 0, pBuf);
 
     CloseHandle(hPipe);
 }

@@ -34,6 +34,8 @@ int main() {
             PipeTest3_AsyncPipeServer();
         else if (cmd == T("p4"))
             PipeTest4_ReceiveImages();
+        else if (cmd == T("p5"))
+            PipeTest5_OnlyServer();
         else if (cmd == T("q")) {
             break;
         }

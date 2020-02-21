@@ -48,6 +48,17 @@ DEFINE_GUID(GUID_DEV_INDIRECT_DISP ,
 
 #define IOCTL_ADAPTER_ECHO   INDIRECT_DISP_IOCTL_USER_RW(0x2)
 
+#define MAX_IMAGE_WIDTH  1920
+#define MAX_IMAGE_HEIGHT 1080
+
 typedef struct {
     DWORD dwMonitorIndex;
 } MONITOR_ARRIVE_ARG_OUT, *PMONITOR_ARRIVE_ARG_OUT;
+
+// According to the comment in IddCx.h, the format of desktop
+// image is always DXGI_FORMAT_B8G8R8A8_UNORM
+typedef struct {
+    DWORD dwWidth;
+    DWORD dwHeight;
+    BYTE  pData[MAX_IMAGE_HEIGHT * MAX_IMAGE_WIDTH];
+} IMAGE_FRAME, *PIMAGE_FRAME;
