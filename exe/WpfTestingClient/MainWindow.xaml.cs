@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Pipes;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media;
@@ -44,7 +47,80 @@ namespace WpfTestingClient
             Debug.WriteLine("Init finished.");
         }
 
+        private struct ScreenImageFrame
+        {
+            public ushort wWidth;
+            public ushort wHeight;
+            public byte[] aRawPixelData;
+        }
+
         private void ImageUpdateThread()
+        {
+            try
+            {
+                IPAddress ipAddress = IPAddress.Parse("192.168.116.128");
+                IPEndPoint remoteEP = new IPEndPoint(ipAddress, 7888);
+
+                Socket sock = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+                try
+                {
+                    sock.Connect(remoteEP);
+                    Debug.WriteLine("Socket connected to {0}", sock.RemoteEndPoint.ToString());
+
+                    using (var stream = new NetworkStream(sock))
+                    {
+                        BinaryReader binaryReader = new BinaryReader(stream);
+
+                        while (true)
+                        {
+                            var frame = new ScreenImageFrame();
+
+                            try
+                            {
+                                frame.wWidth = binaryReader.ReadUInt16();
+                                frame.wHeight = binaryReader.ReadUInt16();
+
+                                frame.aRawPixelData = binaryReader.ReadBytes(frame.wWidth * frame.wHeight * 4);
+
+                                BitmapSource bmSource = BitmapSource.Create(
+                                    frame.wWidth, frame.wHeight, 96, 96,
+                                    PixelFormats.Bgra32, null,
+                                    frame.aRawPixelData, 4 * frame.wWidth);
+
+                                bmSource.Freeze();
+
+                                Screen.Dispatcher.Invoke(() =>
+                                {
+                                    Screen.Source = bmSource;
+                                });
+                            }
+                            catch (Exception e)
+                            {
+                                Debug.WriteLine($"[{nameof(ImageUpdateThread)}] Expection occured while updating image: {e.Message}");
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e.ToString());
+                }
+                finally
+                {
+                    sock.Shutdown(SocketShutdown.Both);
+                    sock.Close();
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.ToString());
+            }
+
+        }
+
+        private void ImageUpdateThreadForTest()
         {
             Random random = new Random();
 
@@ -70,7 +146,7 @@ namespace WpfTestingClient
                 }
                 catch (Exception e)
                 {
-                    Debug.WriteLine($"[{nameof(ImageUpdateThread)}] Expection occured: {e.Message}");
+                    Debug.WriteLine($"[{nameof(ImageUpdateThreadForTest)}] Expection occured: {e.Message}");
                     break;
                 }
             }
