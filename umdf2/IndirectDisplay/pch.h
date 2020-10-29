@@ -29,7 +29,7 @@
 #endif
 
 #ifndef IDDCX_VERSION_MINOR
-#define IDDCX_VERSION_MINOR 3
+#define IDDCX_VERSION_MINOR 4
 #endif
 
 #include <unknwn.h>

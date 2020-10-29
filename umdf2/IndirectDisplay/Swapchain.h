@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+#include "IndirectMonitor.h"
 
 namespace indirect_disp {
     struct Direct3DDevice
@@ -17,9 +18,11 @@ namespace indirect_disp {
 
     class SwapChainProcessor
     {
+        using MonitorContext = IndirectMonitor::MonitorContext;
+
     public:
         SwapChainProcessor(IDDCX_SWAPCHAIN hSwapChain, std::shared_ptr<Direct3DDevice> Device,
-                           HANDLE NewFrameEvent, struct IndirectMonitor* pParentMonitor);
+                           HANDLE NewFrameEvent, MonitorContext* pMonitorContext);
         ~SwapChainProcessor();
 
     private:
@@ -33,7 +36,7 @@ namespace indirect_disp {
         void RunCore();
 
     public:
-        struct IndirectMonitor* m_pParentMonitor;
+        struct IndirectMonitor::MonitorContext* m_pMonitorContext;
 
         IDDCX_SWAPCHAIN m_hThisSwapChainIddCxObj;
         std::shared_ptr<Direct3DDevice> m_Device;

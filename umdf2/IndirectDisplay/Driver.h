@@ -20,7 +20,7 @@ Environment:
 #include "IndirectMonitor.h"
 #include "IoControl.h"
 
-struct IndirectAdapterContext {
+struct AdapterWdfContext {
 	indirect_disp::IndirectAdapter* pIndirectAdapter;
 
 	void Cleanup()
@@ -29,9 +29,9 @@ struct IndirectAdapterContext {
 		pIndirectAdapter = nullptr;
 	}
 };
-WDF_DECLARE_CONTEXT_TYPE(IndirectAdapterContext);
+WDF_DECLARE_CONTEXT_TYPE(AdapterWdfContext);
 
-struct IndirectMonitorContext
+struct MonitorWdfContext
 {
 	indirect_disp::IndirectMonitor* pIndirectMonitor;
 
@@ -41,7 +41,7 @@ struct IndirectMonitorContext
 		pIndirectMonitor = nullptr;
 	}
 };
-WDF_DECLARE_CONTEXT_TYPE(IndirectMonitorContext);
+WDF_DECLARE_CONTEXT_TYPE(MonitorWdfContext);
 
 EXTERN_C_START
 

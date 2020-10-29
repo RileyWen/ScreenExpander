@@ -129,10 +129,10 @@
     <IndirectDisplayDriver>true</IndirectDisplayDriver>
     <CharacterSet>Unicode</CharacterSet>
     <IDDCX_VERSION_MAJOR>1</IDDCX_VERSION_MAJOR>
-    <IDDCX_VERSION_MINOR>3</IDDCX_VERSION_MINOR>
-    <UMDF_VERSION_MINOR>27</UMDF_VERSION_MINOR>
+    <IDDCX_VERSION_MINOR>4</IDDCX_VERSION_MINOR>
+    <UMDF_VERSION_MINOR>31</UMDF_VERSION_MINOR>
     <UMDF_MINIMUM_VERSION_REQUIRED>27</UMDF_MINIMUM_VERSION_REQUIRED>
-    <_NT_TARGET_VERSION>0xA000007</_NT_TARGET_VERSION>
+    <_NT_TARGET_VERSION>0xA000008</_NT_TARGET_VERSION>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>

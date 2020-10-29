@@ -47,12 +47,12 @@ VOID Evt_IddIoDeviceControl(
     LPWSTR pwUserOutputBuf = NULL;
     size_t outputLength = 0;
 
-    auto* pContext = WdfObjectGet_IndirectAdapterContext(Device);
+    auto* pContext = WdfObjectGet_AdapterWdfContext(Device);
     auto* pIndirectAdapter = pContext->pIndirectAdapter;
 
     // Since adapter is null, we cannot attach new monitors to it.
     if (pIndirectAdapter->IsAdapterNull()) {
-        PrintfDebugString("pIndirectAdapter->m_ThisAdapter is null! Ignoring this I/O request.\n");
+        PrintfDebugString("pIndirectAdapter->IddCxAdapterObject is null! Ignoring this I/O request.\n");
         WdfRequestComplete(Request, STATUS_IO_DEVICE_ERROR);
         return;
     }
@@ -62,7 +62,7 @@ VOID Evt_IddIoDeviceControl(
     case IOCTL_MONITOR_ARRIVE:
         PrintfDebugString("Trying to add a new monitor...\n");
 
-        bMonitorCreateSuccess = pIndirectAdapter->NewMonitorArrives(dwNewMonitorIndex);
+        bMonitorCreateSuccess = pIndirectAdapter->NewMonitorArrives(&dwNewMonitorIndex);
         if (!bMonitorCreateSuccess) {
             PrintfDebugString("pIndirectAdapter->NewMonitorArrives Failed!\n");
             WdfRequestComplete(Request, STATUS_IO_DEVICE_ERROR);

@@ -109,11 +109,11 @@ NTSTATUS Evt_IddDeviceAdd(WDFDRIVER Driver, PWDFDEVICE_INIT pDeviceInit)
     }
 
     WDF_OBJECT_ATTRIBUTES Attr;
-    WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&Attr, IndirectAdapterContext);
+    WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&Attr, AdapterWdfContext);
     Attr.EvtCleanupCallback = [](WDFOBJECT Object)
     {
         // Automatically cleanup the context when the WDF object is about to be deleted
-        auto* pContext = WdfObjectGet_IndirectAdapterContext(Object);
+        auto* pContext = WdfObjectGet_AdapterWdfContext(Object);
         if (pContext)
         {
             pContext->Cleanup();

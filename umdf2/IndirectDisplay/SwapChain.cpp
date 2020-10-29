@@ -48,9 +48,9 @@ namespace indirect_disp {
 
     SwapChainProcessor::SwapChainProcessor(
         IDDCX_SWAPCHAIN hSwapChain, std::shared_ptr<Direct3DDevice> Device,
-        HANDLE NewFrameEvent, IndirectMonitor* pParentMonitor)
+        HANDLE NewFrameEvent, struct IndirectMonitor::MonitorContext* pMonitorContext)
         : m_hThisSwapChainIddCxObj(hSwapChain), m_Device(Device),
-        m_hAvailableBufferEvent(NewFrameEvent), m_pParentMonitor(pParentMonitor)
+        m_hAvailableBufferEvent(NewFrameEvent), m_pMonitorContext(pMonitorContext)
     {
         m_hTerminateEvent.attach(CreateEvent(nullptr, FALSE, FALSE, nullptr));
 
@@ -114,6 +114,8 @@ namespace indirect_disp {
         {
             return;
         }
+        
+        PrintfDebugString("SwapChainProcessor::RunCore: Start buffer-acquiring loop.\n");
 
         // Acquire and release buffers in a loop
         for (;;)
@@ -144,6 +146,7 @@ namespace indirect_disp {
                 }
                 else if (WaitResult == WAIT_OBJECT_0 + 1)
                 {
+                    PrintfDebugString("[SwapChainProcessor::RunCore] Received Terminating Signal, Exiting...\n");
                     // We need to terminate
                     break;
                 }
@@ -160,7 +163,7 @@ namespace indirect_disp {
 
 
                 if (!AcquiredBuffer.try_as(AcquiredTexture)) {
-                    PrintfDebugString("Cannot Convert Acquired Buffer to Texture Failed\n");
+                    PrintfDebugString("[SwapChainProcessor::RunCore] Cannot Convert Acquired Buffer to Texture.\n");
                     goto EndOneSurfaceProcessing;
                 }
 
@@ -212,7 +215,7 @@ namespace indirect_disp {
                 m_pImageBuf->dwHeight = TextureDesc.Height;
                 CopyMemory(m_pImageBuf->pData, MappedSubResc.pData, dwImageSizeBytes);
 
-                m_pParentMonitor->m_pParentAdapter->m_PipeServer.WriteBytes(
+                m_pMonitorContext->pAdapterContext->pAdaterClass->m_PipeServer.WriteBytes(
                     m_pImageBuf.get(),
                     sizeof(DWORD) * 2 + dwImageSizeBytes);
 

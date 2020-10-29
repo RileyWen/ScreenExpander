@@ -1,11 +1,12 @@
 #include "pch.h"
 #include "IndirectMonitor.h"
+#include "Swapchain.h"
 
 namespace indirect_disp {
 
 #pragma region IndirectMonitor
-    IndirectMonitor::IndirectMonitor(_In_ IDDCX_MONITOR IddCxMonitorObj, _In_ IndirectAdapter* pParentAdapter)
-        : m_ThisMonitorIddCxObj(IddCxMonitorObj), m_pParentAdapter(pParentAdapter)
+    IndirectMonitor::IndirectMonitor(_In_ DWORD MonitorIndex, _In_ IDDCX_MONITOR IddCxMonitorObj, _In_ IndirectAdapter::AdapterContext* pAdapterContext)
+        : m_MonitorContext{ MonitorIndex, IddCxMonitorObj, pAdapterContext }
     {
     }
 
@@ -28,7 +29,7 @@ namespace indirect_disp {
         else
         {
             // Create a new swap-chain processing thread
-            m_ProcessingThread.reset(new SwapChainProcessor(SwapChain, Device, NewFrameEvent, this));
+            m_ProcessingThread.reset(new SwapChainProcessor(SwapChain, Device, NewFrameEvent, &this->m_MonitorContext));
         }
     }
 

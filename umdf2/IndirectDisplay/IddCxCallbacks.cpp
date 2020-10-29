@@ -7,7 +7,62 @@
 
 using namespace std;
 
-void CreateTargetMode(DISPLAYCONFIG_VIDEO_SIGNAL_INFO& Mode, UINT Width, UINT Height, UINT VSync);
+#pragma region Helper Functions
+
+static inline void FillSignalInfo(DISPLAYCONFIG_VIDEO_SIGNAL_INFO& Mode, DWORD Width, DWORD Height, DWORD VSync, bool bMonitorMode)
+{
+    Mode.totalSize.cx = Mode.activeSize.cx = Width;
+    Mode.totalSize.cy = Mode.activeSize.cy = Height;
+
+    // See https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-displayconfig_video_signal_info
+    // 
+    // ----------- Documentation in IddCx.h --------------
+    // This is the details of the target mode. Note that AdditionalSignalInfo.vSyncFreqDivider has to have a zero value
+    // NOTE : DISPLAYCONFIG_VIDEO_SIGNAL_INFO.vSyncFreq is the Vsync rate between the Indirect Display device and the
+    // connected monitor.  DISPLAYCONFIG_VIDEO_SIGNAL_INFO.AdditionalSignalInfo.vSyncFreqDivider is used to
+    // calculate the rate at which the OS will update the desktop image.
+    //
+    // The desktop update rate will calculate be :
+    // DISPLAYCONFIG_VIDEO_SIGNAL_INFO.vSyncFreq / DISPLAYCONFIG_VIDEO_SIGNAL_INFO.AdditionalSignalInfo.vSyncFreqDivider
+    //
+    // DISPLAYCONFIG_VIDEO_SIGNAL_INFO.AdditionalSignalInfo.vSyncFreqDivider cannot be zero
+    Mode.AdditionalSignalInfo.vSyncFreqDivider = bMonitorMode ? 0 : 1;
+    Mode.AdditionalSignalInfo.videoStandard = 255;
+
+    Mode.vSyncFreq.Numerator = VSync;
+    Mode.vSyncFreq.Denominator = 1;
+    Mode.hSyncFreq.Numerator = VSync * Height;
+    Mode.hSyncFreq.Denominator = 1;
+
+    Mode.scanLineOrdering = DISPLAYCONFIG_SCANLINE_ORDERING_PROGRESSIVE;
+
+    Mode.pixelRate = ((UINT64)VSync) * ((UINT64)Width) * ((UINT64)Height);
+}
+
+static IDDCX_MONITOR_MODE CreateIddCxMonitorMode(DWORD Width, DWORD Height, DWORD VSync,
+    IDDCX_MONITOR_MODE_ORIGIN Origin = IDDCX_MONITOR_MODE_ORIGIN_DRIVER)
+{
+    IDDCX_MONITOR_MODE Mode = {};
+
+    Mode.Size = sizeof(Mode);
+    Mode.Origin = Origin;
+    FillSignalInfo(Mode.MonitorVideoSignalInfo, Width, Height, VSync, true);
+
+    return Mode;
+}
+
+static IDDCX_TARGET_MODE CreateIddCxTargetMode(DWORD Width, DWORD Height, DWORD VSync)
+{
+    IDDCX_TARGET_MODE Mode = {};
+
+    Mode.Size = sizeof(Mode);
+    FillSignalInfo(Mode.TargetVideoSignalInfo.targetVideoSignalInfo, Width, Height, VSync, false);
+
+    return Mode;
+}
+
+#pragma endregion
+
 
 #pragma region Indirect Adapter Callback Forwarding
 
@@ -24,7 +79,7 @@ NTSTATUS Evt_IddDeviceD0Entry(WDFDEVICE Device, WDF_POWER_DEVICE_STATE PreviousS
     PrintfDebugString("Enter Evt_IddDeviceD0Entry\n");
 
     // Initialize the indirect adapter since the underlying device is ready.
-    auto* pAdapterContext = WdfObjectGet_IndirectAdapterContext(Device);
+    auto* pAdapterContext = WdfObjectGet_AdapterWdfContext(Device);
     pAdapterContext->pIndirectAdapter = new indirect_disp::IndirectAdapter(Device);
 
     return STATUS_SUCCESS;
@@ -38,7 +93,7 @@ NTSTATUS Evt_IddAdapterInitFinished(IDDCX_ADAPTER AdapterObject, const IDARG_IN_
     // This is called when the OS has finished setting up the adapter for use by the IddCx driver. It's now possible
     // to report attached monitors.
 
-    auto* pContext = WdfObjectGet_IndirectAdapterContext(AdapterObject);
+    auto* pContext = WdfObjectGet_AdapterWdfContext(AdapterObject);
     if (NT_SUCCESS(pInArgs->AdapterInitStatus))
     {
         pContext->pIndirectAdapter->IndirectAdapterFinishInit();
@@ -60,7 +115,7 @@ NTSTATUS Evt_IddMonitorAssignSwapChain(IDDCX_MONITOR MonitorObject, const IDARG_
 {
     PrintfDebugString("Enter Evt_IddMonitorAssignSwapChain\n");
 
-    auto* pContext = WdfObjectGet_IndirectMonitorContext(MonitorObject);
+    auto* pContext = WdfObjectGet_MonitorWdfContext(MonitorObject);
     pContext->pIndirectMonitor->AssignSwapChain(pInArgs->hSwapChain, pInArgs->RenderAdapterLuid, pInArgs->hNextSurfaceAvailable);
     return STATUS_SUCCESS;
 }
@@ -72,7 +127,7 @@ NTSTATUS Evt_IddMonitorUnassignSwapChain(IDDCX_MONITOR MonitorObject)
 {
     PrintfDebugString("Enter Evt_IddMonitorUnassignSwapChain\n");
 
-    auto* pContext = WdfObjectGet_IndirectMonitorContext(MonitorObject);
+    auto* pContext = WdfObjectGet_MonitorWdfContext(MonitorObject);
     pContext->pIndirectMonitor->UnassignSwapChain();
     return STATUS_SUCCESS;
 }
@@ -123,8 +178,8 @@ NTSTATUS Evt_IddMonitorGetDefaultModes(IDDCX_MONITOR MonitorObject, const IDARG_
             // Otherwise it'll lead to 0xC000000D - STATUS_INVALID_PARAMETER  !!!
             pInArgs->pDefaultMonitorModes[ModeIndex].Origin = IDDCX_MONITOR_MODE_ORIGIN_MONITORDESCRIPTOR;
 
-            pInArgs->pDefaultMonitorModes[ModeIndex].MonitorVideoSignalInfo =
-                indirect_disp::IndirectAdapter::s_KnownMonitorModes[ModeIndex];
+            //pInArgs->pDefaultMonitorModes[ModeIndex].MonitorVideoSignalInfo =
+            //    indirect_disp::IndirectAdapter::s_KnownMonitorModes[ModeIndex];
             //CreateTargetMode(pInArgs->pDefaultMonitorModes[ModeIndex].MonitorVideoSignalInfo,
             //    resolutions[ModeIndex].first, resolutions[ModeIndex].second, 60);
         }
@@ -180,15 +235,17 @@ NTSTATUS Evt_IddMonitorGetPhysicalSize(_In_ IDDCX_MONITOR MonitorObject, _Out_ I
 _Use_decl_annotations_
 NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* pInArgs, IDARG_OUT_PARSEMONITORDESCRIPTION* pOutArgs)
 {
-    PrintfDebugString("Enter Evt_IddParseMonitorDescription\n");
+    PrintfDebugString("Enter Evt_IddParseMonitorDescription. Param: Mode Cnt: %u\n", pInArgs->MonitorModeBufferInputCount);
 
     // ==============================
     // TODO: In a real driver, this function would be called to generate monitor modes for an EDID by parsing it. In
     // this sample driver, we hard-code the EDID, so this function can generate known modes.
     // ==============================
 
+    auto& SampleMonitorInfo = indirect_disp::IndirectAdapter::s_SampleMonitorInfo[indirect_disp::IndirectAdapter::MANUALLY_SPECIFIED_MONITOR_INFO_INDEX];
+
     // Just Manually COUNT the # of modes!
-    const DWORD MonitorModesCount = 2;
+    constexpr DWORD MonitorModesCount = indirect_disp::IndirectAdapter::IndirectSampleMonitorInfo::szModeList;
 
     pOutArgs->MonitorModeBufferOutputCount = MonitorModesCount;
 
@@ -199,12 +256,21 @@ NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* 
     }
     else
     {
+        PrintfDebugString("Evt_IddParseMonitorDescription: Supplied szEdid: %lu, Expect szEdid: %lu\n",
+            pInArgs->MonitorDescription.DataSize,
+            indirect_disp::IndirectAdapter::IndirectSampleMonitorInfo::szEdidBlock);
+        if (pInArgs->MonitorDescription.DataSize != indirect_disp::IndirectAdapter::IndirectSampleMonitorInfo::szEdidBlock)
+            return STATUS_INVALID_PARAMETER;
+
         // Copy the known modes to the output buffer
         for (DWORD ModeIndex = 0; ModeIndex < MonitorModesCount; ModeIndex++)
         {
-            pInArgs->pMonitorModes[ModeIndex].Size = sizeof(IDDCX_MONITOR_MODE);
-            pInArgs->pMonitorModes[ModeIndex].Origin = IDDCX_MONITOR_MODE_ORIGIN_MONITORDESCRIPTOR;
-            pInArgs->pMonitorModes[ModeIndex].MonitorVideoSignalInfo = indirect_disp::IndirectAdapter::s_KnownMonitorModes[ModeIndex];
+            pInArgs->pMonitorModes[ModeIndex] = CreateIddCxMonitorMode(
+                SampleMonitorInfo.pModeList[ModeIndex].Width,
+                SampleMonitorInfo.pModeList[ModeIndex].Height,
+                SampleMonitorInfo.pModeList[ModeIndex].VSync,
+                IDDCX_MONITOR_MODE_ORIGIN_MONITORDESCRIPTOR
+            );
         }
 
         // Set the preferred mode as represented in the EDID
@@ -215,44 +281,6 @@ NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* 
 }
 
 
-/// <summary>
-/// Creates a target mode from the fundamental mode attributes.
-/// </summary>
-void CreateTargetMode(
-    _Out_ DISPLAYCONFIG_VIDEO_SIGNAL_INFO& Mode,
-    _In_ UINT Width, _In_ UINT Height, _In_ UINT VSync)
-{
-    // ----------- Documentation in IddCx.h --------------
-    // This is the details of the target mode. Note that AdditionalSignalInfo.vSyncFreqDivider has to have a zero value
-    // NOTE : DISPLAYCONFIG_VIDEO_SIGNAL_INFO.vSyncFreq is the Vsync rate between the Indirect Display device and the
-    // connected monitor.  DISPLAYCONFIG_VIDEO_SIGNAL_INFO.AdditionalSignalInfo.vSyncFreqDivider is used to
-    // calculate the rate at which the OS will update the desktop image.
-    //
-    // The desktop update rate will calculate be :
-    // DISPLAYCONFIG_VIDEO_SIGNAL_INFO.vSyncFreq / DISPLAYCONFIG_VIDEO_SIGNAL_INFO.AdditionalSignalInfo.vSyncFreqDivider
-    //
-    // DISPLAYCONFIG_VIDEO_SIGNAL_INFO.AdditionalSignalInfo.vSyncFreqDivider cannot be zero
-    Mode.pixelRate = (UINT64(VSync) * UINT64(Width) * UINT64(Height));
-
-    Mode.hSyncFreq = { UINT32(Mode.pixelRate), Width };
-    Mode.vSyncFreq = { UINT32(Mode.pixelRate), Width * Height };
-
-    Mode.totalSize.cx = Mode.activeSize.cx = Width;
-    Mode.totalSize.cy = Mode.activeSize.cy = Height;
-
-    Mode.AdditionalSignalInfo.vSyncFreqDivider = 1; // OS updates desktop at the same rate as the Indirect Display device.
-                                                    // See comments above.
-    Mode.AdditionalSignalInfo.videoStandard = 255;  // D3DKMDT_VSS_OTHER
-
-    Mode.scanLineOrdering = DISPLAYCONFIG_SCANLINE_ORDERING_PROGRESSIVE;
-}
-
-void CreateTargetMode(IDDCX_TARGET_MODE& Mode, UINT Width, UINT Height, UINT VSync)
-{
-    Mode.Size = sizeof(Mode);
-    CreateTargetMode(Mode.TargetVideoSignalInfo.targetVideoSignalInfo, Width, Height, VSync);
-}
-
 _Use_decl_annotations_
 NTSTATUS Evt_IddMonitorQueryModes(IDDCX_MONITOR MonitorObject, const IDARG_IN_QUERYTARGETMODES* pInArgs, IDARG_OUT_QUERYTARGETMODES* pOutArgs)
 {
@@ -262,15 +290,22 @@ NTSTATUS Evt_IddMonitorQueryModes(IDDCX_MONITOR MonitorObject, const IDARG_IN_QU
         "Enter Evt_IddMonitorQueryModes with Param: BufferOutputCount %u\n",
         pInArgs->TargetModeBufferInputCount);
 
-    std::vector<IDDCX_TARGET_MODE> TargetModes(3);
+    std::vector<IDDCX_TARGET_MODE> TargetModes;
 
     // Create a set of modes supported for frame processing and scan-out. These are typically not based on the
     // monitor's descriptor and instead are based on the static processing capability of the device. The OS will
     // report the available set of modes for a given output as the **INTERSECTION** of monitor modes with target modes.
 
-    CreateTargetMode(TargetModes[0], 1920, 1080, 60);
-    CreateTargetMode(TargetModes[1], 800, 600, 60);
-    CreateTargetMode(TargetModes[2], 1600, 900, 60);
+    TargetModes.push_back(CreateIddCxTargetMode(3840, 2160, 60));
+    TargetModes.push_back(CreateIddCxTargetMode(2560, 1440, 144));
+    TargetModes.push_back(CreateIddCxTargetMode(2560, 1440, 90));
+    TargetModes.push_back(CreateIddCxTargetMode(2560, 1440, 60));
+    TargetModes.push_back(CreateIddCxTargetMode(1920, 1080, 144));
+    TargetModes.push_back(CreateIddCxTargetMode(1920, 1080, 90));
+    TargetModes.push_back(CreateIddCxTargetMode(1920, 1080, 60));
+    TargetModes.push_back(CreateIddCxTargetMode(1600, 900, 60));
+    TargetModes.push_back(CreateIddCxTargetMode(1024, 768, 75));
+    TargetModes.push_back(CreateIddCxTargetMode(1024, 768, 60));
 
     pOutArgs->TargetModeBufferOutputCount = (UINT)TargetModes.size();
 
@@ -278,7 +313,6 @@ NTSTATUS Evt_IddMonitorQueryModes(IDDCX_MONITOR MonitorObject, const IDARG_IN_QU
     {
         std::copy(TargetModes.begin(), TargetModes.end(), pInArgs->pTargetModes);
     }
-
 
     return STATUS_SUCCESS;
 }

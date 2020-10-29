@@ -88,7 +88,6 @@ DWORD AsyncPipeServer::WriteBytes(LPCVOID pBase, DWORD dwLength)
     // outstanding asynchronous I/O requests. In the event of such a failure, 
     // GetLastError can return ERROR_INVALID_USER_BUFFER or ERROR_NOT_ENOUGH_MEMORY.
 
-    PrintfDebugString("[Async Pipe] Receive a Write Request\n");
 
     //m_WriteLock.Lock();
 
@@ -101,19 +100,27 @@ DWORD AsyncPipeServer::WriteBytes(LPCVOID pBase, DWORD dwLength)
 
     //m_WriteLock.Unlock();
 
-    if (fWrite != 0)
+    if (fWrite != 0) {
+        PrintfDebugString("[Async Pipe] Frame is written succeessfully.\n");
         return S_OK;
+    }
     else {
         dwErr = GetLastError();
 
         if (dwErr == ERROR_NO_DATA) {
+            PrintfDebugString("[Async Pipe] Reinitlizing the pipe server.\n");
             DisconnectNamedPipe(m_PipeHandle);
             ConnectNamedPipe(m_PipeHandle, m_pConnectOverlappedArg);
             return S_OK;
         }
-        else
-            return (dwErr == ERROR_PIPE_LISTENING)
-                ? S_OK : dwErr;
+        else if (dwErr == ERROR_PIPE_LISTENING) {
+            PrintfDebugString("[Async Pipe] Wait for pipe client connecting...\n");
+            return S_OK;
+        }
+        else {
+            PrintfDebugString("[Async Pipe] Unexpected Error: 0x%x\n", dwErr);
+            return dwErr;
+        }
     }
 }
 
