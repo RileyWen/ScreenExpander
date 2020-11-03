@@ -219,11 +219,7 @@ namespace indirect_disp {
                     m_pImageBuf.get(),
                     sizeof(DWORD) * 2 + dwImageSizeBytes);
 
-                //m_pParentMonitor->m_pParentAdapter->m_PipeServer.WriteBytes(
-                //    MappedSubResc.pData,
-                //    TextureDesc.Width * TextureDesc.Height);
-                //
-                //m_Device->DeviceContext->Unmap(AcquiredTexture.get(), 0);
+                m_Device->DeviceContext->Unmap(AcquiredTexture.get(), 0);
 
                 // ==============================
                 // TODO: Process the frame here
