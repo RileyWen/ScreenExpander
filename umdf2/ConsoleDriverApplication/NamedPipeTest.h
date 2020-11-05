@@ -2,7 +2,7 @@
 
 #include "PublicHeader.h"
 #include "ErrorOutput.h"
-#include "SpinLock.h"
+#include "_SpinLock.h"
 
 void PipeTest1_ConnectAfterCreated_RecvByPacket();
 

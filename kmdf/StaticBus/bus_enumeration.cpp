@@ -8,8 +8,8 @@
 #pragma alloc_text(PAGE, Bus_EvtDeviceAdd)
 #endif
 
-NTSTATUS
-DriverEntry(
+EXTERN_C
+NTSTATUS DriverEntry(
 	IN PDRIVER_OBJECT  DriverObject,
 	IN PUNICODE_STRING RegistryPath
 ) {
@@ -40,8 +40,8 @@ DriverEntry(
 	return status;
 }
 
-NTSTATUS
-Bus_EvtDeviceAdd(
+EXTERN_C
+NTSTATUS Bus_EvtDeviceAdd(
 	IN WDFDRIVER        Driver,
 	IN PWDFDEVICE_INIT  DeviceInit
 ) {
@@ -76,8 +76,8 @@ Bus_EvtDeviceAdd(
 	return status;
 }
 
-NTSTATUS
-Bus_StaticEnum(
+EXTERN_C
+NTSTATUS Bus_StaticEnum(
 	_In_ WDFDEVICE Device
 ) {
 	NTSTATUS		status = STATUS_FAILED_DRIVER_ENTRY;
@@ -110,7 +110,7 @@ Bus_StaticEnum(
 	status = WdfPdoInitAddHardwareID(pDeviceInit, &deviceId);
 	if (!NT_SUCCESS(status))
 		goto CleanUp;
-	
+
 	status = WdfPdoInitAddCompatibleID(pDeviceInit, &compatId);
 	if (!NT_SUCCESS(status))
 		goto CleanUp;
@@ -141,4 +141,3 @@ CleanUp:
 
 	return status;
 }
-

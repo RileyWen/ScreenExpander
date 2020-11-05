@@ -43,6 +43,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PublicUtilities", "PublicUt
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InterProcessQueue", "public_dependencies\PublicUtilities\InterProcessQueue\InterProcessQueue.vcxproj", "{BDF2878D-EDE4-4EDD-A5EE-9DE8F115FAF4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HelperFunction", "public_dependencies\PublicUtilities\HelperFunction\HelperFunction.vcxproj", "{9990067A-3BA3-4F11-9CFC-17C63CFB0897}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -227,6 +229,20 @@ Global
 		{BDF2878D-EDE4-4EDD-A5EE-9DE8F115FAF4}.Release|x64.Build.0 = Release|x64
 		{BDF2878D-EDE4-4EDD-A5EE-9DE8F115FAF4}.Release|x86.ActiveCfg = Release|Win32
 		{BDF2878D-EDE4-4EDD-A5EE-9DE8F115FAF4}.Release|x86.Build.0 = Release|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Debug|ARM.ActiveCfg = Debug|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Debug|ARM64.ActiveCfg = Debug|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Debug|x64.ActiveCfg = Debug|x64
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Debug|x64.Build.0 = Debug|x64
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Debug|x86.ActiveCfg = Debug|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Debug|x86.Build.0 = Debug|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Release|Any CPU.ActiveCfg = Release|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Release|ARM.ActiveCfg = Release|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Release|ARM64.ActiveCfg = Release|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Release|x64.ActiveCfg = Release|x64
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Release|x64.Build.0 = Release|x64
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Release|x86.ActiveCfg = Release|Win32
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -242,6 +258,7 @@ Global
 		{04AD26FE-F518-43E1-99A1-ABBEFEDFD515} = {7EDFB548-A78C-4E3F-8ADD-935992B578D7}
 		{9C0C769F-F13B-4C0B-93D3-CBF51D7DE5D8} = {7EDFB548-A78C-4E3F-8ADD-935992B578D7}
 		{BDF2878D-EDE4-4EDD-A5EE-9DE8F115FAF4} = {9C0C769F-F13B-4C0B-93D3-CBF51D7DE5D8}
+		{9990067A-3BA3-4F11-9CFC-17C63CFB0897} = {9C0C769F-F13B-4C0B-93D3-CBF51D7DE5D8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2D57F0E3-C260-4E4F-A0A9-FB080D1F10EB}

@@ -1,9 +1,9 @@
-#include "SpinLock.h"
+#include "_SpinLock.h"
 #include "ErrorOutput.h"
 
-SpinLock::SpinLock() : m_LockValue(0U) { }
+_SpinLock::_SpinLock() : m_LockValue(0U) { }
 
-void SpinLock::Lock()
+void _SpinLock::Lock()
 {
     // If and only if the original value of m_LockValue is 0 and 
     // after CAS its value becomes 1, we successfully acquire the lock.
@@ -11,12 +11,12 @@ void SpinLock::Lock()
         while (m_LockValue);
 }
 
-bool SpinLock::TryLock()
+bool _SpinLock::TryLock()
 {
     return InterlockedExchange(&m_LockValue, 1U) == 0;
 }
 
-void SpinLock::Unlock()
+void _SpinLock::Unlock()
 {
     m_LockValue = 0U;
 }

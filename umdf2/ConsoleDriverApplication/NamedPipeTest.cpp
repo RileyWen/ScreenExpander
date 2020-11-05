@@ -248,7 +248,7 @@ void PipeTest3_AsyncPipeServer()
 }
 
 void PipeTest2_OptimisiticLock() {
-    SpinLock lock, OutLock;
+    _SpinLock lock, OutLock;
     OutLock.Lock();
 
     auto snd_thread = [&] {

@@ -2,9 +2,9 @@
 
 #include "PublicHeader.h"
 
-class SpinLock {
+class _SpinLock {
 public:
-    SpinLock();
+    _SpinLock();
 
     void Lock();
 

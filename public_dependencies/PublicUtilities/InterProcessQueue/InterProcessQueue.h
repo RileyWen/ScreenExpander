@@ -45,12 +45,14 @@ namespace LibraryInternal {
 
         void OpenExisting();
 
-        // Add count by 1. Non-Blocking.
+        // Add semaphore count by 1. Non-Blocking.
         bool TryReleaseOne() noexcept;
 
-        // Decrease count by 1. Blocking.
+        // Decrease semaphore count by 1. Blocking.
         // If false is returned, an unexpected error occurs. Use GetLastError() to find out the error.
         void WaitOne();
+
+        HANDLE GetSemaphoreHandle() { return m_hSemaphore_; }
 
     private:
         const std::string m_SemaphoreName;
@@ -68,7 +70,7 @@ class WaitTimeoutException : public std::exception {
 
 class WinApiException : public std::exception {
 public:
-    explicit WinApiException(const char *prefix = nullptr)
+    explicit WinApiException(const char* prefix = nullptr)
     {
         if (prefix) {
             m_what_.append(prefix);

@@ -37,18 +37,25 @@
   <ItemGroup>
     <ClCompile Include="AsyncPipeServer.cpp" />
     <ClCompile Include="ErrorOutput.cpp" />
+    <ClCompile Include="InterProcessQueueTest.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NamedPipeTest.cpp" />
     <ClCompile Include="OpenUmdfInterfaceTest.cpp" />
-    <ClCompile Include="SpinLock.cpp" />
+    <ClCompile Include="_SpinLock.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AsyncPipeServer.h" />
     <ClInclude Include="ErrorOutput.h" />
+    <ClInclude Include="InterProcessQueueTest.h" />
     <ClInclude Include="NamedPipeTest.h" />
     <ClInclude Include="OpenUmdfInterfaceTest.h" />
-    <ClInclude Include="SpinLock.h" />
+    <ClInclude Include="_SpinLock.h" />
     <ClInclude Include="PublicHeader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\public_dependencies\PublicUtilities\InterProcessQueue\InterProcessQueue.vcxproj">
+      <Project>{bdf2878d-ede4-4edd-a5ee-9de8f115faf4}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D7CC47B0-9B89-4222-8B38-DF06EDD7FE29}</ProjectGuid>
@@ -80,10 +87,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>WindowsApplicationForDrivers10.0</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <ConfigurationType>Application</ConfigurationType>
     <DriverTargetPlatform>Universal</DriverTargetPlatform>
     <CharacterSet>Unicode</CharacterSet>
+    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
@@ -160,10 +168,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories);$(SolutionDir)public_dependencies\PublicHeaders</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)public_dependencies\PublicHeaders;$(SolutionDir)public_dependencies\PublicUtilities\InterProcessQueue;%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib</AdditionalDependencies>
@@ -172,7 +180,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories);$(SolutionDir)public_dependencies\PublicHeaders</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)public_dependencies\PublicHeaders;$(SolutionDir)public_dependencies\PublicUtilities\InterProcessQueue;%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib</AdditionalDependencies>

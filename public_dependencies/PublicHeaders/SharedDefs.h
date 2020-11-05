@@ -1,11 +1,5 @@
 #pragma once
 
-/********************* NOTICE *******************************
-* This header file is referenced by both C and CPP source
-* code file. The grammer in this header file should always be
-* C grammer.
-************************************************************/
-
 #include <initguid.h>
 // GUID of the interface that allow user application
 // to notify the indirect display driver that a monitor
@@ -54,8 +48,8 @@ DEFINE_GUID(GUID_DEV_INDIRECT_DISP,
 
 #define IOCTL_ADAPTER_ECHO   INDIRECT_DISP_IOCTL_USER_RW(0x2)
 
-#define MAX_IMAGE_WIDTH 3840
-#define MAX_IMAGE_HEIGHT 2160
+constexpr DWORD MAX_IMAGE_WIDTH = 3840;
+constexpr DWORD MAX_IMAGE_HEIGHT = 2160;
 
 typedef struct {
     DWORD dwMonitorIndex;

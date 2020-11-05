@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PublicHeader.h"
-#include "SpinLock.h"
+#include "_SpinLock.h"
 
 class AsyncPipeServer {
 public:
@@ -30,5 +30,5 @@ private:
 
     // Used in multi-monitor situation to guarantee
     // exclusive write operation on m_PipeHandle.
-    SpinLock m_WriteLock;
+    _SpinLock m_WriteLock;
 };
