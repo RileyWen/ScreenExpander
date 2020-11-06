@@ -213,6 +213,7 @@ namespace indirect_disp {
 
                 m_pImageBuf->dwWidth = TextureDesc.Width;
                 m_pImageBuf->dwHeight = TextureDesc.Height;
+                m_pImageBuf->dwMonitorIndex = m_pMonitorContext->MonitorIndex;
                 CopyMemory(m_pImageBuf->pData, MappedSubResc.pData, dwImageSizeBytes);
 
                 m_pMonitorContext->pAdapterContext->pAdaterClass->m_PipeServer.WriteBytes(

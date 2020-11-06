@@ -66,7 +66,7 @@
 // If defined, new monitors will be reported without EDID.
 //#define MONITOR_NO_EDID
 
-extern TCHAR __DEBUG_BUFFER[128];
+inline TCHAR __DEBUG_BUFFER[256];
 #define PrintfDebugString(_Fmt_, ...)                       \
 do                                                          \
 {                                                           \

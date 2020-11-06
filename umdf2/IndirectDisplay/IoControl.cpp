@@ -1,19 +1,3 @@
-/*++
-
-Module Name:
-
-    queue.c
-
-Abstract:
-
-    This file contains the queue entry points and callbacks.
-
-Environment:
-
-    User-mode Driver Framework 2
-
---*/
-
 #include "pch.h"
 #include "IoControl.h"
 #include "Driver.h"
@@ -32,20 +16,7 @@ VOID Evt_IddIoDeviceControl(
     UNREFERENCED_PARAMETER(InputBufferLength);
     //UNREFERENCED_PARAMETER(IoControlCode);
 
-#pragma region Viriables for IOCTL_MONITOR_ARRIVE
-    DWORD dwNewMonitorIndex;
-    bool bMonitorCreateSuccess;
-
-    MONITOR_ARRIVE_ARG_OUT MonitorArriveArgOut;
-#pragma endregion
-
     NTSTATUS status;
-
-    LPWSTR pwUserInputBuf = NULL;
-    size_t inputLength = 0;
-
-    LPWSTR pwUserOutputBuf = NULL;
-    size_t outputLength = 0;
 
     auto* pContext = WdfObjectGet_AdapterWdfContext(Device);
     auto* pIndirectAdapter = pContext->pIndirectAdapter;
@@ -59,35 +30,105 @@ VOID Evt_IddIoDeviceControl(
 
     switch (IoControlCode)
     {
-    case IOCTL_MONITOR_ARRIVE:
-        PrintfDebugString("Trying to add a new monitor...\n");
+    case IOCTL_MONITOR_ARRIVE: {
+        PVOID pUserInputBuf;
+        size_t cbInputBuf;
 
-        bMonitorCreateSuccess = pIndirectAdapter->NewMonitorArrives(&dwNewMonitorIndex);
-        if (!bMonitorCreateSuccess) {
-            PrintfDebugString("pIndirectAdapter->NewMonitorArrives Failed!\n");
-            WdfRequestComplete(Request, STATUS_IO_DEVICE_ERROR);
-            return;
-        }
+        PVOID pUserOutputBuf;
+        size_t cbOutputBuf;
 
-        MonitorArriveArgOut.dwMonitorIndex = dwNewMonitorIndex;
+        bool bMonitorCreateSuccess;
 
-        status = WdfRequestRetrieveOutputBuffer(Request, sizeof(MONITOR_ARRIVE_ARG_OUT), (PVOID*)&pwUserOutputBuf, &outputLength);
+        MONITOR_ARRIVE_ARG_IN MonitorArriveArgIn;
+        MONITOR_ARRIVE_ARG_OUT MonitorArriveArgOut;
+
+        PrintfDebugString("[IOCTL_MONITOR_ARRIVE] Trying to add a new monitor...\n");
+
+        pUserInputBuf = NULL;
+        pUserOutputBuf = NULL;
+        cbInputBuf = 0;
+        cbOutputBuf = 0;
+
+        status = WdfRequestRetrieveInputBuffer(Request, sizeof(MONITOR_ARRIVE_ARG_IN),
+            (PVOID*)&pUserInputBuf, &cbInputBuf);
         if (!NT_SUCCESS(status)) {
-            PrintfDebugString("WdfRequestRetrieveOutputBuffer Failed!\n");
+            PrintfDebugString("[IOCTL_MONITOR_ARRIVE] WdfRequestRetrieveInputBuffer Failed!\n");
             WdfRequestComplete(Request, status);
             return;
         }
 
-        CopyMemory(pwUserOutputBuf, &MonitorArriveArgOut, sizeof(MONITOR_ARRIVE_ARG_OUT));
+        _Analysis_assume_(cbInputBuf >= sizeof(MONITOR_ARRIVE_ARG_IN));
+        CopyMemory(&MonitorArriveArgIn, pUserInputBuf, sizeof(MONITOR_ARRIVE_ARG_IN));
+
+        bMonitorCreateSuccess = pIndirectAdapter->NewMonitorArrives(MonitorArriveArgIn, &MonitorArriveArgOut);
+        if (!bMonitorCreateSuccess) {
+            PrintfDebugString("[IOCTL_MONITOR_ARRIVE] pIndirectAdapter->NewMonitorArrives Failed!\n");
+            WdfRequestComplete(Request, STATUS_IO_DEVICE_ERROR);
+            return;
+        }
+        
+        status = WdfRequestRetrieveOutputBuffer(Request, sizeof(MONITOR_ARRIVE_ARG_OUT),
+            (PVOID*)&pUserOutputBuf, &cbOutputBuf);
+        if (!NT_SUCCESS(status)) {
+            PrintfDebugString("[IOCTL_MONITOR_ARRIVE] WdfRequestRetrieveOutputBuffer Failed!\n");
+            WdfRequestComplete(Request, status);
+            return;
+        }
+
+        _Analysis_assume_(cbOutputBuf >= sizeof(MONITOR_ARRIVE_ARG_OUT));
+        CopyMemory(pUserOutputBuf, &MonitorArriveArgOut, sizeof(MONITOR_ARRIVE_ARG_OUT));
 
         WdfRequestCompleteWithInformation(Request, STATUS_SUCCESS, sizeof(MONITOR_ARRIVE_ARG_OUT));
         break;
+    }
 
-    case IOCTL_MONITOR_DEPART:
-        WdfRequestComplete(Request, STATUS_NOT_IMPLEMENTED);
+    case IOCTL_MONITOR_DEPART: {
+        PVOID pUserInputBuf;
+        size_t cbInputBuf;
+
+        bool bMonitorDepartSuccess;
+
+        MONITOR_DEPART_ARG_IN MonitorDepartArgIn;
+
+        PrintfDebugString("[IOCTL_MONITOR_DEPART] Trying to add a new monitor...\n");
+
+        pUserInputBuf = NULL;
+        cbInputBuf = 0;
+
+        status = WdfRequestRetrieveInputBuffer(Request, sizeof(MONITOR_DEPART_ARG_IN),
+            (PVOID*)&pUserInputBuf, &cbInputBuf);
+        if (!NT_SUCCESS(status)) {
+            PrintfDebugString("[IOCTL_MONITOR_DEPART] WdfRequestRetrieveInputBuffer Failed!\n");
+            WdfRequestComplete(Request, status);
+            return;
+        }
+
+        _Analysis_assume_(cbInputBuf >= sizeof(MONITOR_DEPART_ARG_IN));
+        CopyMemory(&MonitorDepartArgIn, pUserInputBuf, sizeof(MONITOR_DEPART_ARG_IN));
+
+        bMonitorDepartSuccess = pIndirectAdapter->MonitorDepart(MonitorDepartArgIn);
+        if (!bMonitorDepartSuccess) {
+            PrintfDebugString("[IOCTL_MONITOR_DEPART] pIndirectAdapter->MonitorDepart Failed!\n");
+            WdfRequestComplete(Request, STATUS_IO_DEVICE_ERROR);
+            return;
+        }
+
+        WdfRequestComplete(Request, STATUS_SUCCESS);
         break;
+    }
 
-    case IOCTL_ADAPTER_ECHO:
+    case IOCTL_ADAPTER_ECHO: {
+        LPWSTR pwUserInputBuf;
+        size_t inputLength;
+
+        LPWSTR pwUserOutputBuf;
+        size_t outputLength;
+
+        pwUserInputBuf = NULL;
+        pwUserOutputBuf = NULL;
+        inputLength = 0;
+        outputLength = 0;
+
         status = WdfRequestRetrieveInputBuffer(Request, 0, (PVOID*)&pwUserInputBuf, &inputLength);
         if (!NT_SUCCESS(status)) {
             PrintfDebugString("InWdfRequestRetrieveInputBuffer Failed!\n");
@@ -102,10 +143,9 @@ VOID Evt_IddIoDeviceControl(
 
         PrintfDebugString("IO Request: OutputBuf = 0x%p, OutputBufLength = %zu\n", pwUserOutputBuf, outputLength);
 
-
         StringCbPrintf(pwUserOutputBuf, outputLength, TEXT("Response from UMDF Driver!"));
 
-        PrintfDebugString("Now pwUserOutputBuf: %ws\n", pwUserOutputBuf);
+        PrintfDebugString("Now pUserOutputBuf: %ws\n", pwUserOutputBuf);
 
 
         // Must use WdfRequestCompleteWithInformation to set the 'ByteReturn' field!!
@@ -115,12 +155,12 @@ VOID Evt_IddIoDeviceControl(
         WdfRequestCompleteWithInformation(Request, status, sizeof(TEXT("Response from UMDF Driver!")));
 
         break;
+    }
 
     default:
         WdfRequestComplete(Request, STATUS_NOT_IMPLEMENTED);
         break;
     }
-
 }
 
 //NTSTATUS

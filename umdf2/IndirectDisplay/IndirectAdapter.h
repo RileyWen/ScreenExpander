@@ -29,9 +29,12 @@ namespace indirect_disp {
         // Called after the constructor. See the constructor.
         void IndirectAdapterFinishInit() {}
 
-        bool NewMonitorArrives(DWORD* NewMonitorIndex);
+        _Must_inspect_result_
+            bool NewMonitorArrives(_In_ const MONITOR_ARRIVE_ARG_IN& MonitorArriveArgIn,
+                _Out_ MONITOR_ARRIVE_ARG_OUT* pMonitorArriveArgOut);
 
-        bool MonitorDepart(DWORD MonitorIndex);
+        _Must_inspect_result_
+            bool MonitorDepart(_In_ const MONITOR_DEPART_ARG_IN& MonitorDepartArgIn);
 
         // In case of failed IddCxAdapterInitAsync
         bool IsAdapterNull() { return nullptr == m_AdapterContext.IddCxAdapterObject; }
@@ -69,7 +72,7 @@ namespace indirect_disp {
             const DWORD ulPreferredModeIdx;
         };
 
-        static constexpr struct IndirectSampleMonitorInfo s_SampleMonitorInfo[] = 
+        static constexpr struct IndirectSampleMonitorInfo s_SampleMonitorInfo[] =
         {
             // Modified EDID from Dell S2719DGF
             {

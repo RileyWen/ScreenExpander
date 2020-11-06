@@ -104,7 +104,9 @@ namespace indirect_disp {
     //    0x00,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x6E
     //};
 
-    bool IndirectAdapter::NewMonitorArrives(DWORD* dwNewMonitorIndex) {
+    _Must_inspect_result_
+    bool IndirectAdapter::NewMonitorArrives(_In_ const MONITOR_ARRIVE_ARG_IN& MonitorArriveArgIn,
+        _Out_ MONITOR_ARRIVE_ARG_OUT* pMonitorArriveArgOut) {
         // =========================== Comment of Original Forked Code =====================================================
         // TODO: In a real driver, the EDID should be retrieved dynamically from a connected physical monitor. The EDID
         // provided here is purely for demonstration, as it describes only 640x480 @ 60 Hz and 800x600 @ 60 Hz. Monitor
@@ -113,7 +115,9 @@ namespace indirect_disp {
         // single device to ensure the OS can tell the monitors apart.
         // =================================================================================================================
 
-        *dwNewMonitorIndex = 0xFFFFFFFF;
+        UNREFERENCED_PARAMETER(MonitorArriveArgIn);
+
+        pMonitorArriveArgOut->dwMonitorIndex = 0xFFFFFFFF;
 
         // Find an empty slot for newly arrived monitors.
         DWORD indexOfEmptySlot;
@@ -196,7 +200,7 @@ namespace indirect_disp {
         Status = IddCxMonitorArrival(ArgOutMonitorCreate.MonitorObject, &ArrivalOut);
         if (!NT_SUCCESS(Status)) {
             PrintfDebugString("IddCxMonitorArrival Failed: 0x%x\n", Status);
-            
+
             WdfObjectDelete(ArgOutMonitorCreate.MonitorObject);
             return false;
         }
@@ -215,26 +219,28 @@ namespace indirect_disp {
         pMonitorWdfContext->pIndirectMonitor = m_pChildMonitors[indexOfEmptySlot];
 
         // Set the out function argument
-        *dwNewMonitorIndex = indexOfEmptySlot;
+        pMonitorArriveArgOut->dwMonitorIndex = indexOfEmptySlot;
 
         return true;
     }
 
-    bool IndirectAdapter::MonitorDepart(DWORD MonitorIndex) {
-        NTSTATUS Status = IddCxMonitorDeparture(m_pChildMonitors[MonitorIndex]->m_MonitorContext.IddCxMonitorObj);
+    _Must_inspect_result_
+    bool IndirectAdapter::MonitorDepart(_In_ const MONITOR_DEPART_ARG_IN& MonitorDepartArgIn) {
+        NTSTATUS Status = IddCxMonitorDeparture(
+            m_pChildMonitors[MonitorDepartArgIn.dwMonitorIndex]->m_MonitorContext.IddCxMonitorObj);
         STATUS_MONITOR_INVALID_DESCRIPTOR_CHECKSUM;
 
         if (NT_SUCCESS(Status)) {
-            PrintfDebugString("IddCxMonitorDeparture Succeeded. Monitor Index: %ud\n", MonitorIndex);
+            PrintfDebugString("IddCxMonitorDeparture Succeeded. Monitor Index: %ud\n", MonitorDepartArgIn.dwMonitorIndex);
 
             // The class pointed by m_pChildMonitors[MonitorIndex] has been deleted by WDF Context callback.
             // We just set the dangling pointer here to nullptr.
-            m_pChildMonitors[MonitorIndex] = nullptr;
+            m_pChildMonitors[MonitorDepartArgIn.dwMonitorIndex] = nullptr;
 
             return true;
         }
         else {
-            PrintfDebugString("IddCxMonitorDeparture Failed: 0x%x. Monitor Index: %ud.\n", Status, MonitorIndex);
+            PrintfDebugString("IddCxMonitorDeparture Failed: 0x%x. Monitor Index: %ud.\n", Status, MonitorDepartArgIn.dwMonitorIndex);
 
             return false;
         }

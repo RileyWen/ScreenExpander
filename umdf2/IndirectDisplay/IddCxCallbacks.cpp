@@ -256,7 +256,7 @@ NTSTATUS Evt_IddParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION* 
     }
     else
     {
-        PrintfDebugString("Evt_IddParseMonitorDescription: Supplied szEdid: %lu, Expect szEdid: %lu\n",
+        PrintfDebugString("Evt_IddParseMonitorDescription: Supplied szEdid: %lu, Expect szEdid: %zd\n",
             pInArgs->MonitorDescription.DataSize,
             indirect_disp::IndirectAdapter::IndirectSampleMonitorInfo::szEdidBlock);
         if (pInArgs->MonitorDescription.DataSize != indirect_disp::IndirectAdapter::IndirectSampleMonitorInfo::szEdidBlock)
