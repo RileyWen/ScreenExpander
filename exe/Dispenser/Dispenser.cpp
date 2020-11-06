@@ -15,7 +15,7 @@
 #include <conio.h>
 
 #define DEFAULT_LISTEN_ADDR "0.0.0.0"
-#define DEFAULT_PORT "12345"
+#define DEFAULT_PORT "23232"
 
 HANDLE hSomeEvent;
 HANDLE hSocketEvent;
@@ -69,15 +69,22 @@ SOCKET CreateListenSocket(PCSTR pNodeName, PCSTR pServiceName) {
     return ListenSocket;
 }
 
+/*
+Suppress arithmetic overflow check
+*/
+#pragma warning( push )
+#pragma warning( disable : 26451 )
+
 int RealMain() {
     int iResult;
     DWORD dwResult;
+    bool bResult;
 
     SOCKET TempSocket = INVALID_SOCKET;
     HANDLE hTempEvent = INVALID_HANDLE_VALUE;
 
     struct sockaddr_storage client_addr;
-    struct sockaddr_in *pSockAddrIn;
+    struct sockaddr_in* pSockAddrIn;
     int iAddrLen;
 
     WSANETWORKEVENTS NetworkEvents;
@@ -91,14 +98,31 @@ int RealMain() {
     constexpr DWORD LISTEN_SOCK_INDEX = 0;
     constexpr DWORD CLIENT_SOCK_INDEX_0 = 1;
 
-    constexpr DWORD LISTEN_EVENT_INDEX = 0;
-    constexpr DWORD CLIENT_EVENT_INDEX_0 = 1;
+    constexpr DWORD QUEUE_EVENT_INDEX = 0;
+    constexpr DWORD LISTEN_EVENT_INDEX = 1;
+    constexpr DWORD CLIENT_EVENT_INDEX_0 = 2;
 
-    std::unique_ptr BufPtr = std::make_unique<char>(1024 * 8);
+    auto BufPtr = std::make_unique<char>(1024 * 8);
     WSABUF WsaBuf{ 1024 * 8, BufPtr.get() };
 
     DWORD dwByteRecv;
     DWORD dwZero = 0;
+
+    InterProcessQueue<IMAGE_FRAME> ImageFrameQueue{ INTERPROCESS_FILE_MAPPING_NAME };
+    auto FrameBufPtr = std::make_unique<IMAGE_FRAME>();
+
+    try {
+        ImageFrameQueue.OpenExisting();
+    }
+    catch (WinApiException& e) {
+        std::cout << "WinApiException: " << e.what() << std::endl;
+        goto FailAndCleanUp;
+    }
+    catch (std::exception& e) {
+        std::cout << "Unexpected exception occured: " << e.what() << std::endl;
+        goto FailAndCleanUp;
+    }
+    EventHandleList.push_back(ImageFrameQueue.GetQueueSemaphoreHandle());
 
     TempSocket = CreateListenSocket(DEFAULT_LISTEN_ADDR, DEFAULT_PORT);
     if (TempSocket == INVALID_SOCKET) {
@@ -126,6 +150,17 @@ int RealMain() {
         dwResult = WaitForMultipleObjects(EventHandleList.size(), EventHandleList.data(), FALSE, 10000);
         switch (dwResult)
         {
+        case WAIT_OBJECT_0 + QUEUE_EVENT_INDEX:
+            bResult = ImageFrameQueue.TryPopFront(FrameBufPtr.get());
+            if (bResult) {
+                printf("Receive a frame: Width: %lu, Height: %lu\n", FrameBufPtr->dwWidth, FrameBufPtr->dwHeight);
+            }
+            else {
+                printf("Queue has been notified wrongly.\n");
+            }
+
+            break;
+
         case WAIT_OBJECT_0 + LISTEN_EVENT_INDEX:
             std::cout << "Listen Event Triggered!\n";
 
@@ -169,7 +204,7 @@ int RealMain() {
                 dwClientCount++;
 
                 iResult = WSAEventSelect(SocketList[CLIENT_SOCK_INDEX_0 + dwClientCount - 1],
-                    EventHandleList[CLIENT_SOCK_INDEX_0 + dwClientCount - 1], FD_READ | FD_CLOSE);
+                    EventHandleList[CLIENT_EVENT_INDEX_0 + dwClientCount - 1], FD_READ | FD_CLOSE);
                 if (iResult != 0) {
                     std::cout << "WSAEventSelect <NewClient> failed with error: " << WSAGetLastErrorAsStringA() << std::endl;
                     goto FailAndCleanUp;
@@ -241,6 +276,7 @@ int RealMain() {
                         break;
                     case WSAENETDOWN:
                         std::cout << "Unexpected WSAENETDOWN. Exiting...\n";
+                        [[fallthrough]];
                     default:
                         goto FailAndCleanUp;
                     }
@@ -273,6 +309,7 @@ FailAndCleanUp:
 
     return 1;
 }
+#pragma warning( pop )
 
 int main()
 {

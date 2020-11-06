@@ -9,7 +9,7 @@ namespace indirect_disp {
         friend struct IndirectMonitor;
 
     public:
-        static constexpr DWORD MAX_MONITOR_CAPACITY = 8;
+        static constexpr DWORD MAX_MONITOR_CAPACITY = MAX_MONITOR_NUM;
 
         // Only for test purpose
         static constexpr DWORD MANUALLY_SPECIFIED_MONITOR_INFO_INDEX = 1;

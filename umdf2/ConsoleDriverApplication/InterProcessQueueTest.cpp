@@ -15,19 +15,23 @@ struct ElemType {
 };
 
 void InterProcessQueueProducer() {
-    InterProcessQueue<ElemType> queue{ INTERPROCESS_FILE_MAPPING_NAME };
+    InterProcessQueue<IMAGE_FRAME> queue{ INTERPROCESS_FILE_MAPPING_NAME };
+    auto pFrame = std::make_unique<IMAGE_FRAME>();
 
     try {
         queue.Create();
-        int a, b;
+        DWORD dwWidth, dwHeight;
 
         while (true) {
-            std::cin >> a >> b;
+            std::cin >> dwWidth >> dwHeight;
 
-            if (!queue.TryEmplaceBack(a, b))
+            pFrame->dwWidth = dwWidth;
+            pFrame->dwHeight = dwHeight;
+
+            if (!queue.TryPushBack(*pFrame))
                 std::cout << "Emplace Failed!\n";
 
-            if (a == 0 && b == 0)
+            if (dwWidth == 0 && dwHeight == 0)
                 break;
         }
     }
@@ -40,22 +44,44 @@ void InterProcessQueueProducer() {
 }
 
 void InterProcessQueueConsumer() {
-    InterProcessQueue<ElemType> queue{ INTERPROCESS_FILE_MAPPING_NAME };
+    InterProcessQueue<IMAGE_FRAME> queue{ INTERPROCESS_FILE_MAPPING_NAME };
+    auto pFrame = std::make_unique<IMAGE_FRAME>();
 
     try {
         queue.OpenExisting();
 
-        ElemType elem;
-
         while (true) {
-            queue.PopFront(&elem);
-            if (elem.a == 0 && elem.b == 0)
-                break;
+            DWORD dwResult;
 
-            std::cout << elem.a << " " << elem.b << std::endl;
+            try {
+                dwResult = WaitForSingleObject(queue.GetQueueSemaphoreHandle(), 1000 * 5);
 
-            system("pause");
+                switch (dwResult)
+                {
+                case WAIT_OBJECT_0:
+                    queue.TryPopFront(pFrame.get());
+                    if (pFrame->dwHeight == 0 && pFrame->dwWidth == 0)
+                        break;
 
+                    std::cout << pFrame->dwWidth << " " << pFrame->dwHeight << std::endl;
+
+                    system("pause");
+                    break;
+
+                case WAIT_TIMEOUT:
+                    throw WaitTimeoutException();
+                    break;
+                case WAIT_FAILED:
+                    [[fallthrough]];
+                default:
+                    throw WinApiException("[Semaphore] WaitOne");
+                    break;
+                }
+            }
+            catch (std::exception& e) {
+                std::cout << e.what() << std::endl;
+                system("pause");
+            }
         }
     }
     catch (std::exception& e) {

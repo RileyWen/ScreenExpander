@@ -6,6 +6,9 @@
 
 #include <exception>
 
+template<typename T>
+class InterProcessQueue;
+
 namespace LibraryInternal {
 
     class SharedMemoryPool {
@@ -52,12 +55,14 @@ namespace LibraryInternal {
         // If false is returned, an unexpected error occurs. Use GetLastError() to find out the error.
         void WaitOne();
 
-        HANDLE GetSemaphoreHandle() { return m_hSemaphore_; }
+        inline HANDLE GetSemaphoreHandle() { return m_hSemaphore_; }
 
     private:
         const std::string m_SemaphoreName;
 
         HANDLE m_hSemaphore_;
+
+        template<typename T> friend class InterProcessQueue;
     };
 
 }
@@ -111,6 +116,7 @@ private:
     struct QueueMeta {
         volatile uint16_t head;
         volatile uint16_t tail;
+        volatile size_t size;
 
         LibraryInternal::SpinLock lock;
     };
@@ -151,6 +157,7 @@ public:
 
         m_pQueueMeta_->head = 0;
         m_pQueueMeta_->tail = 0;
+        m_pQueueMeta_->size = 0;
 
         new(&m_pQueueMeta_->lock) LibraryInternal::SpinLock;
     }
@@ -169,12 +176,33 @@ public:
 
         m_pQueueMeta_->tail++;
         m_pQueueMeta_->tail %= m_capacity_;
+        m_pQueueMeta_->size++;
 
         m_pQueueMeta_->lock.Unlock();
 
         return true;
     }
 
+    bool TryPushBack(const T& elem) {
+        m_pQueueMeta_->lock.Lock();
+
+        if (!m_Semaphore_.TryReleaseOne()) {
+            m_pQueueMeta_->lock.Unlock();
+            return false;
+        }
+
+        m_pElemArray_[m_pQueueMeta_->tail] = elem;
+
+        m_pQueueMeta_->tail++;
+        m_pQueueMeta_->tail %= m_capacity_;
+        m_pQueueMeta_->size++;
+
+        m_pQueueMeta_->lock.Unlock();
+
+        return true;
+    }
+
+    // This function will decrease Semaphore count by 1;
     void PopFront(T* pElem) {
         m_Semaphore_.WaitOne();
 
@@ -185,8 +213,33 @@ public:
 
         m_pQueueMeta_->head++;
         m_pQueueMeta_->head %= m_capacity_;
+        m_pQueueMeta_->size++;
 
         m_pQueueMeta_->lock.Unlock();
+    }
+
+    bool TryPopFront(T* pElem) {
+        // The frame arrives every 1/144 ~ 1/60 second. Contention should be low.
+        m_pQueueMeta_->lock.Lock();
+
+        if (m_pQueueMeta_->size == 0) {
+            m_pQueueMeta_->lock.Unlock();
+            return false;
+        }
+
+        *pElem = m_pElemArray_[m_pQueueMeta_->head];
+
+        m_pQueueMeta_->head++;
+        m_pQueueMeta_->head %= m_capacity_;
+        m_pQueueMeta_->size++;
+
+        m_pQueueMeta_->lock.Unlock();
+
+        return true;
+    }
+
+    HANDLE GetQueueSemaphoreHandle() {
+        return m_Semaphore_.m_hSemaphore_;
     }
 };
 
